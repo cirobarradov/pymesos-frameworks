@@ -39,25 +39,19 @@ class MinimalScheduler(Scheduler):
             task.task_id.value = task_id
             task.agent_id.value = offer.agent_id.value
             task.name = 'task {}'.format(task_id)
-#            task.container.type = 'MESOS'
             task.container.type = 'DOCKER' 
-#            task.container.docker.image.type = 'DOCKER'
-#            task.container.docker.image.docker.name = 'luismorales/pymesos-exec:2.0'
             task.container.docker.image = os.getenv('DOCKER_TASK')
             task.container.docker.network = 'HOST'
             task.container.docker.force_pull_image = True
-            #task.executor = self.executor
-#            task.data = encode_data('Hello from task {}!'.format(task_id))
 
             task.resources = [
                 dict(name='cpus', type='SCALAR', scalar={'value': TASK_CPU}),
                 dict(name='mem', type='SCALAR', scalar={'value': TASK_MEM}),
             ]
-
             task.command.shell = True
             task.command.value = '/app/task.sh'
             task.command.arguments = [self._message]
-            
+            logging.info(task)            
             driver.launchTasks(offer.id, [task], filters)
 
     def getResource(self, res, name):
@@ -73,17 +67,6 @@ class MinimalScheduler(Scheduler):
 
 
 def main(message):
-#   executor = Dict()
-#   executor.executor_id.value = 'MinimalExecutor'
-#   executor.name = executor.executor_id.value
-#   executor.command.value = '. /app/executor.sh'
-#    executor.resources = [
-#        dict(name='mem', type='SCALAR', scalar={'value': EXECUTOR_MEM}),
-#        dict(name='cpus', type='SCALAR', scalar={'value': EXECUTOR_CPUS}),
-#    ]
-#    executor.container.type = 'MESOS'
-#    executor.container.mesos.image.type = 'DOCKER'
-#    executor.container.mesos.docker.image = 'luismorales/pymesos-exec:2.0'
 
     framework = Dict()
     framework.user = getpass.getuser()
@@ -93,7 +76,7 @@ def main(message):
     driver = MesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
-        os.getenv('MASTER'),
+               os.getenv('MASTER'),
         use_addict=True,
     )
 
