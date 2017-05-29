@@ -1,12 +1,14 @@
 FROM bitnami/minideb:jessie
 
-MAINTAINER l.morales@bbva.com
+MAINTAINER rbravo@datiobd.com
 
 # expose port
 #EXPOSE $PORTS
 
 # copy the contents of the `app/` folder into the container at build time
 ADD pymesos/ /pymesos/
+# copy the contents of the `app/` folder into the container at build time
+ADD app/ /app/
 
 #run commands:
 RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev \
@@ -16,10 +18,10 @@ RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-p
     # install python version on virtual environment
     && virtualenv -p /usr/bin/python2.7 /venv
     #activate virtual environment
-RUN . /venv/bin/activate \
+    &&  /bin/bash -c "source /venv/bin/activate" \
     # install python dependencies into venv
-    && pip install -r /pymesos/requirements.txt --upgrade \
-    && pip install /pymesos/lib/pymesos-0.2.13.tar.gz \
+    && /venv/bin/pip install -r /pymesos/requirements.txt --upgrade \
+    && /venv/bin/pip install /pymesos/lib/pymesos-0.2.13.tar.gz \
     # clean cache
     && apt-get clean -y && \
     apt-get autoclean -y && \
@@ -30,12 +32,9 @@ RUN . /venv/bin/activate \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /usr/share/doc/*
 
-# copy the contents of the `app/` folder into the container at build time
-ADD app/ /app/
-
 RUN chmod a+x /app/scheduler.sh
 
-ENV MASTER 192.168.1.30:5050
-ENV DOCKER_TASK luismorales/pymesos-exec:4.0
+ENV MASTER 172.16.48.181
+ENV DOCKER_TASK cirobarradov/executor-app
 
 # CMD source /venv/bin/activate
