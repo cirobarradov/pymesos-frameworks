@@ -13,4 +13,4 @@
 #docker run -e VERSION=2.7 -e MASTER_IP=172.16.48.181 -v /home/rbravo/datio/techlab/python-docker/app:/opt prueba /opt/app.
 
 . /venv/bin/activate
-python /app/scheduler.py $1	
+/venv/bin/python /app/scheduler.py $1	
