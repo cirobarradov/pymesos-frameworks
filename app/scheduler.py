@@ -10,6 +10,7 @@ import getpass
 from threading import Thread
 from os.path import abspath, join, dirname
 import os
+import redis
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
@@ -89,6 +90,10 @@ class MinimalScheduler(Scheduler):
 
 def main(message):
 
+    r = redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
+    r.set('foo', 'bar')
+    logging.info("redis")
+    logging.info(r.get('foo'))
     framework = Dict()
     framework.user = getpass.getuser()
     framework.name = "MinimalFramework"
