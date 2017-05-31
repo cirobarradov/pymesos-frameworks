@@ -55,7 +55,7 @@ class MinimalScheduler(Scheduler):
         logging.info(self._redis.get('foo'))
         #queue????
         if self._redis.decr('foo')<0:
-            raise TaskException('maximum number of tasks')
+            raise Exception('maximum number of tasks')
 
     def resourceOffers(self, driver, offers):
         filters = {'refuse_seconds': 5}        
@@ -88,7 +88,7 @@ class MinimalScheduler(Scheduler):
 
                 logging.info(task)            
                 driver.launchTasks(offer.id, [task], filters)
-            except TaskException:
+            except Exception:
                 logging.info("TASK EXCEPTION")
                 pass 
 
