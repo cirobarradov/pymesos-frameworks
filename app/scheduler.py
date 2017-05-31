@@ -48,9 +48,9 @@ class MinimalScheduler(Scheduler):
         logginf.info(self)
         logginf.info(driver)
         logging.info("************RE RE gistered") 
-    def checkTask():
+    def checkTask(framework):
         logging.info("redis-------------------------")
-        logging.info(frameworkId)
+        logging.info(framework)
         self._redis.decr('foo')
         logging.info(self._redis.get('foo'))
         #queue????
@@ -62,6 +62,7 @@ class MinimalScheduler(Scheduler):
         
         for offer in offers:
             try:
+                checkTask(self.framework_id)
                 cpus = self.getResource(offer.resources, 'cpus')
                 mem = self.getResource(offer.resources, 'mem')
                 if cpus < TASK_CPU or mem < TASK_MEM:
