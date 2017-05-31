@@ -11,7 +11,7 @@ ADD pymesos/ /pymesos/
 ADD app/ /app/
 
 #run commands:
-RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev redis-tools \
+RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev \ #redis-tools \
     && pip install virtualenv \
     # create a virtualenv we can later use
     && mkdir -p /venv/ \
@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-p
     && virtualenv -p /usr/bin/python2.7 /venv \
     #activate virtual environment
     &&  /bin/bash -c "source /venv/bin/activate" \
+    # install redis python cli
+    && /venv/bin/pip install redis
     # install python dependencies into venv
     && /venv/bin/pip install -r /pymesos/requirements.txt --upgrade \
     && /venv/bin/pip install /pymesos/lib/pymesos-0.2.13.tar.gz \
