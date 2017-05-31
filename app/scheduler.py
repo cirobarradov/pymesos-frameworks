@@ -51,10 +51,10 @@ class MinimalScheduler(Scheduler):
     def checkTask(framework):
         logging.info("redis-------------------------")
         logging.info(framework)
-        self._redis.decr('foo')
         logging.info(self._redis.get('foo'))
         #queue????
-        if self._redis.decr('foo')<0:
+        self._redis.decr('foo')
+        if self._redis.get('foo')<0:
             raise Exception('maximum number of tasks')
 
     def resourceOffers(self, driver, offers):
@@ -62,6 +62,7 @@ class MinimalScheduler(Scheduler):
         
         for offer in offers:
             try:
+                logging.info("redis==============")
                 checkTask(self.framework_id)
                 cpus = self.getResource(offer.resources, 'cpus')
                 mem = self.getResource(offer.resources, 'mem')
