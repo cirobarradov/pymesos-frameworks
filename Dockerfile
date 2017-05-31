@@ -36,5 +36,6 @@ RUN chmod a+x /app/scheduler.sh
 
 ENV MASTER 172.16.48.181
 ENV DOCKER_TASK cirobarradov/executor-app
+ENV MAX_TASKS 5
 
 # CMD source /venv/bin/activate
