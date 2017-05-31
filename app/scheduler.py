@@ -50,7 +50,9 @@ class MinimalScheduler(Scheduler):
 
     def resourceOffers(self, driver, offers):
         filters = {'refuse_seconds': 5}
-
+        self._redis.set('foo', 'bar')
+        logging.info("redis-------------------------")
+        logging.info(self._redis.get('foo'))
         for offer in offers:
             cpus = self.getResource(offer.resources, 'cpus')
             mem = self.getResource(offer.resources, 'mem')
@@ -91,9 +93,6 @@ class MinimalScheduler(Scheduler):
 
 def main(message):
 
-    self._redis.set('foo', 'bar')
-    logging.info("redis")
-    logging.info(r.get('foo'))
     framework = Dict()
     framework.user = getpass.getuser()
     framework.name = "MinimalFramework"
