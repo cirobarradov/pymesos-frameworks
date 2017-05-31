@@ -31,10 +31,11 @@ class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
 class MinimalScheduler(Scheduler):
 
     def __init__(self,message):
-        self._redis= redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
+        self._redis= redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)      
         self._message = message
         
     def registered(self, driver, frameworkId, masterInfo):
+        self._redis.set('foo', int(os.getenv('MAX_TASKS')))
         logging.info("************registered") 
         logging.info(frameworkId) 
         logging.info(masterInfo) 
@@ -49,10 +50,7 @@ class MinimalScheduler(Scheduler):
         logging.info("************RE RE gistered") 
 
     def resourceOffers(self, driver, offers):
-        filters = {'refuse_seconds': 5}
-        self._redis.set('foo', 'bar')
-        logging.info("redis-------------------------")
-        logging.info(self._redis.get('foo'))
+        filters = {'refuse_seconds': 5}        
         for offer in offers:
             cpus = self.getResource(offer.resources, 'cpus')
             mem = self.getResource(offer.resources, 'mem')
@@ -76,6 +74,10 @@ class MinimalScheduler(Scheduler):
             task.command.shell = True
             task.command.value = '/app/task.sh '+self._message
             #task.command.arguments = [self._message]
+            logging.info("redis-------------------------")
+            self._redis.decr('foo')
+            logging.info(self._redis.get('foo'))
+
             logging.info(task)            
             driver.launchTasks(offer.id, [task], filters)
 
