@@ -24,7 +24,7 @@ class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
         logging.info("************LAUNCH TASKS ") 
         logging.info(tasks)
         logging.info("************LAUNCH TASKS") 
-        super.launchTasks(self,offerIds,tasks, filters)
+        MesosSchedulerDriver.launchTasks(self,offerIds,tasks, filters)
 
 
 class MinimalScheduler(Scheduler):
