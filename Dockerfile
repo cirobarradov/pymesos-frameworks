@@ -11,7 +11,7 @@ ADD pymesos/ /pymesos/
 ADD app/ /app/
 
 #run commands:
-RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev \
+RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev redis-tools \
     && pip install virtualenv \
     # create a virtualenv we can later use
     && mkdir -p /venv/ \
