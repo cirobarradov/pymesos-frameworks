@@ -19,6 +19,13 @@ TASK_MEM = 32
 EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
+class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
+    def launchTasks(self, offerIds, tasks, filters=None):
+        logging.info("************LAUNCH TASKS ") 
+        logging.info(tasks)
+        logging.info("************LAUNCH TASKS") 
+        super.launchTasks(self,offerIds,tasks, filters)
+
 
 class MinimalScheduler(Scheduler):
 
@@ -87,7 +94,14 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
 
-    driver = MesosSchedulerDriver(
+   # driver = MesosSchedulerDriver(
+   #     MinimalScheduler(message),
+    #    framework,
+     #          os.getenv('MASTER'),
+      #  use_addict=True,
+    #)
+    
+    driver = MinimalMesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
                os.getenv('MASTER'),
