@@ -31,6 +31,7 @@ class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
 class MinimalScheduler(Scheduler):
 
     def __init__(self,message):
+        self._redis= redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
         self._message = message
         
     def registered(self, driver, frameworkId, masterInfo):
@@ -90,8 +91,7 @@ class MinimalScheduler(Scheduler):
 
 def main(message):
 
-    r = redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
-    r.set('foo', 'bar')
+    self._redis.set('foo', 'bar')
     logging.info("redis")
     logging.info(r.get('foo'))
     framework = Dict()
