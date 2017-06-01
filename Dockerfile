@@ -1,5 +1,5 @@
 FROM bitnami/minideb:jessie
-
+ 
 MAINTAINER rbravo@datiobd.com
 
 # expose port
