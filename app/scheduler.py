@@ -26,6 +26,11 @@ EXECUTOR_MEM = 32
         logging.info(self._framework)
         MesosSchedulerDriver._teardown(self)
         logging.info(self._framework)
+    def _shutdown(self):
+        logging.info("shut down")
+        logging.info(self._framework)
+        MesosSchedulerDriver._shutdown(self)
+        logging.info(self._framework)
 
 
 class MinimalScheduler(Scheduler):
