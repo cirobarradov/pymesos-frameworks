@@ -31,6 +31,11 @@ EXECUTOR_MEM = 32
         logging.info(self._framework)
         MesosSchedulerDriver._shutdown(self)
         logging.info(self._framework)
+    def killTask(self, task_id):
+        logging.info("KILL TASK !!!!!!")
+        logging.info(self._framework)
+        MesosSchedulerDriver.killTask(self,task_id)
+        logging.info(self._framework)
 
 
 class MinimalScheduler(Scheduler):
