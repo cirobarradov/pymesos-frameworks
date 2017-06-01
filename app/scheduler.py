@@ -20,12 +20,12 @@ EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
 
-# class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
-#    def launchTasks(self, offerIds, tasks, filters=None):
-#        logging.info("************LAUNCH TASKS ") 
-#        logging.info(tasks)
-#        logging.info("************LAUNCH TASKS") 
-#        MesosSchedulerDriver.launchTasks(self,offerIds,tasks, filters)
+ class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
+    def _teardown(self):
+        logging.info("tear down")
+        logging.info(self._framework)
+        MesosSchedulerDriver._teardown(self)
+        logging.info(self._framework)
 
 
 class MinimalScheduler(Scheduler):
@@ -118,19 +118,19 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
 
-    driver = MesosSchedulerDriver(
-        MinimalScheduler(message),
-        framework,
-        os.getenv('MASTER'),
-        use_addict=True,
-    )
+#    driver = MesosSchedulerDriver(
+#        MinimalScheduler(message),
+#        framework,
+#        os.getenv('MASTER'),
+#        use_addict=True,
+#    )
 
-    #    driver = MinimalMesosSchedulerDriver(
-    #        MinimalScheduler(message),
-    #        framework,
-    #               os.getenv('MASTER'),
-    #        use_addict=True,
-    #    )
+        driver = MinimalMesosSchedulerDriver(
+            MinimalScheduler(message),
+            framework,
+                   os.getenv('MASTER'),
+            use_addict=True,
+        )
 
     def signal_handler(signal, frame):
         driver.stop()
