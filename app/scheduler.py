@@ -8,7 +8,6 @@ import socket
 import signal
 import getpass
 from threading import Thread
-from os.path import abspath, join, dirname
 import os
 import redis
 
@@ -20,7 +19,8 @@ TASK_MEM = 32
 EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
-#class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
+
+# class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
 #    def launchTasks(self, offerIds, tasks, filters=None):
 #        logging.info("************LAUNCH TASKS ") 
 #        logging.info(tasks)
@@ -29,41 +29,45 @@ EXECUTOR_MEM = 32
 
 
 class MinimalScheduler(Scheduler):
-
-    def __init__(self,message):
-        self._redis= redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)      
+    def __init__(self, message):
+        self._redis = redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
         self._message = message
-        
+
     def registered(self, driver, frameworkId, masterInfo):
-        self._redis.set('foo', int(os.getenv('MAX_TASKS')))
-        logging.info("************registered") 
-        logging.info(frameworkId) 
-        logging.info(masterInfo) 
-        logging.info(self) 
-        logging.info(driver) 
-        logging.info("************registered") 
+        #set max tasks to framework registered
+        logging.info("************registered     " + frameworkId['value'])
+        self._redis.set(frameworkId['value'], int(os.getenv('MAX_TASKS')))
+        #logging.info(masterInfo)
+        #logging.info(driver)
+        logging.info("<---")
+
     def reregistered(self, driver, masterInfo):
-        logging.info("************RE RE gistered") 
-        logging.info(masterInfo) 
-        logginf.info(self)
-        logginf.info(driver)
-        logging.info("************RE RE gistered") 
-    def checkTask(framework):
-        logging.info("redis-------------------------")
-        logging.info(framework)
-        logging.info(self._redis.get('foo'))
-        #queue????
-        self._redis.decr('foo')
-        if self._redis.get('foo')<0:
+        logging.info("************RE RE gistered")
+        logging.info(masterInfo)
+        #logging.info(self)
+        logging.info(driver)
+        logging.info("<---")
+
+    def checkTask(self, frameworkID):
+
+        if int(self._redis.get(frameworkID)) <= 0:
+            logging.info("maximum number of tasks")
             raise Exception('maximum number of tasks')
+        else:
+            logging.info("number tasks available = "+self._redis.get(frameworkID) + " of " + os.getenv("MAX_TASKS") )
+            self._redis.decr(frameworkID)
+        #logging.info(framework)
+        #logging.info(_redis.get('foo'))
+        # queue????
+        #self._redis.decr('foo')
+        #if self._redis.get('foo') < 0:
+         #   raise Exception('maximum number of tasks')
 
     def resourceOffers(self, driver, offers):
-        filters = {'refuse_seconds': 5}        
-        
+        filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
-                logging.info("redis==============")
-                checkTask(self.framework_id)
+                self.checkTask(driver.framework_id)
                 cpus = self.getResource(offer.resources, 'cpus')
                 mem = self.getResource(offer.resources, 'mem')
                 if cpus < TASK_CPU or mem < TASK_MEM:
@@ -74,7 +78,7 @@ class MinimalScheduler(Scheduler):
                 task.task_id.value = task_id
                 task.agent_id.value = offer.agent_id.value
                 task.name = 'task {}'.format(task_id)
-                task.container.type = 'DOCKER' 
+                task.container.type = 'DOCKER'
                 task.container.docker.image = os.getenv('DOCKER_TASK')
                 task.container.docker.network = 'HOST'
                 task.container.docker.force_pull_image = True
@@ -84,14 +88,14 @@ class MinimalScheduler(Scheduler):
                     dict(name='mem', type='SCALAR', scalar={'value': TASK_MEM}),
                 ]
                 task.command.shell = True
-                task.command.value = '/app/task.sh '+self._message
-                #task.command.arguments = [self._message]
-
-                logging.info(task)            
+                task.command.value = '/app/task.sh ' + self._message
+                # task.command.arguments = [self._message]
+                #logging.info(task)
+                logging.info("launch task name:" + task.name + " resources: "+ ",".join(str(x) for x in task.resources))
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
-                logging.info("TASK EXCEPTION")
-                pass 
+                #traceback.print_exc()
+                pass
 
     def getResource(self, res, name):
         for r in res:
@@ -103,10 +107,12 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-
+        if update.state == "TASK_FINISHED":
+            logging.info("take another task for framework" + driver.framework_id)
+            self._redis.incr(driver.framework_id)
+            logging.info("tasks availables = " + self._redis.get(driver.framework_id)+ " of "+os.getenv("MAX_TASKS"))
 
 def main(message):
-
     framework = Dict()
     framework.user = getpass.getuser()
     framework.name = "MinimalFramework"
@@ -115,16 +121,16 @@ def main(message):
     driver = MesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
-               os.getenv('MASTER'),
+        os.getenv('MASTER'),
         use_addict=True,
     )
-    
-#    driver = MinimalMesosSchedulerDriver(
-#        MinimalScheduler(message),
-#        framework,
-#               os.getenv('MASTER'),
-#        use_addict=True,
-#    )
+
+    #    driver = MinimalMesosSchedulerDriver(
+    #        MinimalScheduler(message),
+    #        framework,
+    #               os.getenv('MASTER'),
+    #        use_addict=True,
+    #    )
 
     def signal_handler(signal, frame):
         driver.stop()
@@ -145,6 +151,7 @@ def main(message):
 
 if __name__ == '__main__':
     import logging
+
     logging.basicConfig(level=logging.DEBUG)
     if len(sys.argv) != 2:
         print("Usage: {} <message>".format(sys.argv[0]))
