@@ -104,52 +104,13 @@ class MinimalScheduler(Scheduler):
             self._redis.incr(driver.framework_id)
             logging.info("tasks availables = " + self._redis.get(driver.framework_id)+ " of "+os.getenv("MAX_TASKS"))
             
-    def _send(self, body, path='/api/v1/scheduler', method='POST', headers={}):
-        logging.info(body)
-        logging.info(json.dumps(body).encode('utf-8'))
-        with self._lock:
-            conn = self._get_conn()
-            if conn is None:
-                raise RuntimeError('Not connected yet')
-
-            if body != '':
-                data = json.dumps(body).encode('utf-8')
-                headers['Content-Type'] = 'application/json'
-            else:
-                data = ''
-
-            stream_id = self.stream_id
-            if stream_id:
-                headers['Mesos-Stream-Id'] = stream_id
-
-            if self._basic_credential:
-                headers['Authorization'] = self._basic_credential
-
-            try:
-                conn.request(method, path, body=data, headers=headers)
-                resp = conn.getresponse()
-            except Exception:
-                self._close()
-                raise
-
-            if resp.status < 200 or resp.status >= 300:
-                raise RuntimeError('Failed to send request %s: %s\n%s' % (
-                    resp.status, resp.read(), data))
-
-            result = resp.read()
-            if not result:
-                return {}
-
-            try:
-                return json.loads(result.decode('utf-8'))
-            except Exception:
-                return {}
     
 def main(message):
     framework = Dict()
     framework.user = getpass.getuser()
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
+    framework.id=10000
 
     driver = MesosSchedulerDriver(
         MinimalScheduler(message),
