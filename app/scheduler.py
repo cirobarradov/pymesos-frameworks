@@ -137,19 +137,19 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
 
-#    driver = MesosSchedulerDriver(
-#        MinimalScheduler(message),
-#        framework,
-#        os.getenv('MASTER'),
-#        use_addict=True,
-#    )
+    driver = MesosSchedulerDriver(
+        MinimalScheduler(message),
+        framework,
+        os.getenv('MASTER'),
+        use_addict=True,
+    )
 
-        driver = MinimalMesosSchedulerDriver(
-            MinimalScheduler(message),
-            framework,
-                   os.getenv('MASTER'),
-            use_addict=True,
-        )
+#        driver = MinimalMesosSchedulerDriver(
+ #           MinimalScheduler(message),
+  #          framework,
+   #                os.getenv('MASTER'),
+    #        use_addict=True,
+     #   )
 
     def signal_handler(signal, frame):
         driver.stop()
