@@ -103,7 +103,35 @@ class MinimalScheduler(Scheduler):
             logging.info("take another task for framework" + driver.framework_id)
             self._redis.incr(driver.framework_id)
             logging.info("tasks availables = " + self._redis.get(driver.framework_id)+ " of "+os.getenv("MAX_TASKS"))
+            
+    def gen_request(self):
+        logging.info("*************** GEN REQUEST ")
 
+        request = dict(
+            type='SUBSCRIBE',
+            subscribe=dict(
+                framework_info=self.framework
+            ),
+        )
+        if 'id' in self._framework:
+            request['framework_id'] = self._framework['id']
+
+        data = json.dumps(request)
+        _authorization = ''
+        if self._basic_credential is not None:
+            _authorization = 'Authorization: %s\r\n' % (
+                self._basic_credential,
+            )
+
+        request = ('POST /api/v1/scheduler HTTP/1.1\r\nHost: %s\r\n'
+                   'Content-Type: application/json\r\n'
+                   'Accept: application/json\r\n%s'
+                   'Connection: close\r\nContent-Length: %s\r\n\r\n%s') % (
+                       self.master, _authorization, len(data), data
+        )
+        logging.info(request)
+        return request.encode('utf-8')
+    
 def main(message):
     framework = Dict()
     framework.user = getpass.getuser()
