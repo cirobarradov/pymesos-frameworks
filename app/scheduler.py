@@ -33,17 +33,15 @@ class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
     def framework_id(self, id):
         logging.info(" SETTER FRAMWORK ID ")
         self._framework['id'] = dict(value=id)
-
-    def launchTasks(self, offerIds, tasks, filters=None):
-        #logging.info("************LAUNCH TASKS ")
-        #logging.info(tasks)
-        #logging.info("************LAUNCH TASKS")
-        MesosSchedulerDriver.launchTasks(self,offerIds,tasks, filters)
-
-    def _teardown(self):
-        logging.info("tear down")
+    def _shutdown(self):
+        logging.info("shut down")
         logging.info(self._framework)
-        MesosSchedulerDriver._teardown(self)
+        MesosSchedulerDriver._shutdown(self)
+        logging.info(self._framework)
+    def killTask(self, task_id):
+        logging.info("KILL TASK !!!!!!")
+        logging.info(self._framework)
+        MesosSchedulerDriver.killTask(self,task_id)
         logging.info(self._framework)
 
 
@@ -137,19 +135,20 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
 
-    driver = MesosSchedulerDriver(
+#driver = MesosSchedulerDriver(
+    #    MinimalScheduler(message),
+    #    framework,
+    #    os.getenv('MASTER'),
+    #    use_addict=True,
+    #)
+
+    driver = MinimalMesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
         os.getenv('MASTER'),
         use_addict=True,
     )
 
-#        driver = MinimalMesosSchedulerDriver(
- #           MinimalScheduler(message),
-  #          framework,
-   #                os.getenv('MASTER'),
-    #        use_addict=True,
-     #   )
 
     def signal_handler(signal, frame):
         driver.stop()
