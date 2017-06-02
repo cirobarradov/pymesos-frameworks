@@ -20,31 +20,6 @@ EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
 
-class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
-    @property
-    def framework_id(self):
-        id = self._framework.get('id')
-        logging.info(" def framework id %%%%%%%%%%%%%%%%%%%%%%%%%%%555")
-        logging.info(id)
-        logging.info(self._framework)
-        return id and id.get('value')
-
-    @framework_id.setter
-    def framework_id(self, id):
-        logging.info(" SETTER FRAMWORK ID ")
-        self._framework['id'] = dict(value=id)
-    def _shutdown(self):
-        logging.info("shut down")
-        logging.info(self._framework)
-        MesosSchedulerDriver._shutdown(self)
-        logging.info(self._framework)
-    def killTask(self, task_id):
-        logging.info("KILL TASK !!!!!!")
-        logging.info(self._framework)
-        MesosSchedulerDriver.killTask(self,task_id)
-        logging.info(self._framework)
-
-
 class MinimalScheduler(Scheduler):
     def __init__(self, message):
         self._redis = redis.StrictRedis(host=os.getenv('REDIS_SERVER'), port=6379, db=0)
@@ -135,14 +110,7 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
 
-#driver = MesosSchedulerDriver(
-    #    MinimalScheduler(message),
-    #    framework,
-    #    os.getenv('MASTER'),
-    #    use_addict=True,
-    #)
-
-    driver = MinimalMesosSchedulerDriver(
+    driver = MesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
         os.getenv('MASTER'),
