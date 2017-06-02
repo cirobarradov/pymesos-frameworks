@@ -20,7 +20,7 @@ EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
 
- class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
+class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
     def _teardown(self):
         logging.info("tear down")
         logging.info(self._framework)
