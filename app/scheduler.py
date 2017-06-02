@@ -104,33 +104,46 @@ class MinimalScheduler(Scheduler):
             self._redis.incr(driver.framework_id)
             logging.info("tasks availables = " + self._redis.get(driver.framework_id)+ " of "+os.getenv("MAX_TASKS"))
             
-    def gen_request(self):
-        logging.info("*************** GEN REQUEST ")
+    def _send(self, body, path='/api/v1/scheduler', method='POST', headers={}):
+        logging.info(body)
+        logging.info(json.dumps(body).encode('utf-8'))
+        with self._lock:
+            conn = self._get_conn()
+            if conn is None:
+                raise RuntimeError('Not connected yet')
 
-        request = dict(
-            type='SUBSCRIBE',
-            subscribe=dict(
-                framework_info=self.framework
-            ),
-        )
-        if 'id' in self._framework:
-            request['framework_id'] = self._framework['id']
+            if body != '':
+                data = json.dumps(body).encode('utf-8')
+                headers['Content-Type'] = 'application/json'
+            else:
+                data = ''
 
-        data = json.dumps(request)
-        _authorization = ''
-        if self._basic_credential is not None:
-            _authorization = 'Authorization: %s\r\n' % (
-                self._basic_credential,
-            )
+            stream_id = self.stream_id
+            if stream_id:
+                headers['Mesos-Stream-Id'] = stream_id
 
-        request = ('POST /api/v1/scheduler HTTP/1.1\r\nHost: %s\r\n'
-                   'Content-Type: application/json\r\n'
-                   'Accept: application/json\r\n%s'
-                   'Connection: close\r\nContent-Length: %s\r\n\r\n%s') % (
-                       self.master, _authorization, len(data), data
-        )
-        logging.info(request)
-        return request.encode('utf-8')
+            if self._basic_credential:
+                headers['Authorization'] = self._basic_credential
+
+            try:
+                conn.request(method, path, body=data, headers=headers)
+                resp = conn.getresponse()
+            except Exception:
+                self._close()
+                raise
+
+            if resp.status < 200 or resp.status >= 300:
+                raise RuntimeError('Failed to send request %s: %s\n%s' % (
+                    resp.status, resp.read(), data))
+
+            result = resp.read()
+            if not result:
+                return {}
+
+            try:
+                return json.loads(result.decode('utf-8'))
+            except Exception:
+                return {}
     
 def main(message):
     framework = Dict()
