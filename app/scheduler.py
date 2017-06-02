@@ -21,20 +21,29 @@ EXECUTOR_MEM = 32
 
 
 class MinimalMesosSchedulerDriver(MesosSchedulerDriver):
+    @property
+    def framework_id(self):
+        id = self._framework.get('id')
+        logging.info(" def framework id %%%%%%%%%%%%%%%%%%%%%%%%%%%555")
+        logging.info(id)
+        logging.info(self._framework)
+        return id and id.get('value')
+
+    @framework_id.setter
+    def framework_id(self, id):
+        logging.info(" SETTER FRAMWORK ID ")
+        self._framework['id'] = dict(value=id)
+
+    def launchTasks(self, offerIds, tasks, filters=None):
+        #logging.info("************LAUNCH TASKS ")
+        #logging.info(tasks)
+        #logging.info("************LAUNCH TASKS")
+        MesosSchedulerDriver.launchTasks(self,offerIds,tasks, filters)
+
     def _teardown(self):
         logging.info("tear down")
         logging.info(self._framework)
         MesosSchedulerDriver._teardown(self)
-        logging.info(self._framework)
-    def _shutdown(self):
-        logging.info("shut down")
-        logging.info(self._framework)
-        MesosSchedulerDriver._shutdown(self)
-        logging.info(self._framework)
-    def killTask(self, task_id):
-        logging.info("KILL TASK !!!!!!")
-        logging.info(self._framework)
-        MesosSchedulerDriver.killTask(self,task_id)
         logging.info(self._framework)
 
 
