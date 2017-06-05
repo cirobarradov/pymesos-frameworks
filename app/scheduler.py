@@ -111,7 +111,8 @@ def main(message):
     framework.name = "MinimalFramework"
     framework.hostname = socket.gethostname()
     framework._id='003fba48-218a-484d-97d2-3ab5c89c9257-0277'
-
+    framework.id=u'003fba48-218a-484d-97d2-3ab5c89c9257-0277'
+    
     driver = MesosSchedulerDriver(
         MinimalScheduler(message),
         framework,
