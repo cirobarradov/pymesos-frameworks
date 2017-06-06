@@ -7,7 +7,7 @@ import signal
 import getpass
 from threading import Thread
 import os
-import hiredis
+import redis
 import json
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
