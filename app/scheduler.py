@@ -8,7 +8,6 @@ import getpass
 from threading import Thread
 import os
 import redis
-import json
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
