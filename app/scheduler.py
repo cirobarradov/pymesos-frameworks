@@ -17,34 +17,70 @@ TASK_MEM = 32
 EXECUTOR_CPUS = 1
 EXECUTOR_MEM = 32
 
-
+REDIS_TASKS = "tasks"
+REDIS_MAX_TASKS= "max_tasks"
+REDIS_ID="fwk_id"
 class MinimalScheduler(Scheduler):
     def __init__(self, message, conn):
         self._redis = conn
         self._message = message
 
     '''
+    Method that get all task from framework (key) state and send them to be reconciled
+    '''
+    def reconcileTasksFromState(self,driver,key):
+        logging.info("RECONCILE TASKS")
+        tasks=[]
+        aux = eval(self._redis.hget(key, REDIS_TASKS))
+        for elto in aux:
+            tasks.append(eval(elto[1]))
+        driver.reconcileTasks(tasks)
+
+    '''
+    Method that adds a task to framework (key) state
+    '''
+    def addTaskToState(self,key,task):
+        logging.info("ADD TASK TO REDIS")
+        aux = eval(self._redis.hget(key, REDIS_TASKS))
+        tuple=(task.task_id.value,str(task))
+        aux.add(tuple)
+        self._redis.hset(key, REDIS_TASKS, aux)
+    '''
+    Method that removes a task from framework (key) state
+    '''
+    def removeTaskFromState(self,key,taskId):
+        logging.info("REMOVE TASK FROM REDIS")
+        aux = eval(self._redis.hget(key, REDIS_TASKS))
+        d=dict(aux)
+        tuple=(taskId,d[taskId])
+        aux.remove(tuple)
+        self._redis.hset(key, REDIS_TASKS, aux)
+    '''
     Method that checks if redis has scheduler registered 
     '''
-    def saveOrUpdateState(self, key, max_tasks, id):
+    def saveOrUpdateState(self, driver, key, max_tasks, id):
         if self._redis.exists(key):
+
             logging.info("framework already registered in redis")
+            self.reconcileTasksFromState(driver,key)
             #self._redis.hset(key, 'max_tasks', max_tasks)
-            logging.info("****************** OLD ID" + self._redis.hget(key, 'fwk_id'))
-            self._redis.hset(key, 'fwk_id', id)
+            logging.info("****************** OLD ID" + self._redis.hget(key, REDIS_ID))
+            self._redis.hset(key, REDIS_ID, id)
 
         else:
             logging.info("framework NOT registered in redis")
-            self._redis.hset(key, 'max_tasks', max_tasks)
-            self._redis.hset(key, 'fwk_id', id)
+            self._redis.hset(key, REDIS_MAX_TASKS, max_tasks)
+            self._redis.hset(key, REDIS_ID, id)
+            self._redis.hset(key, REDIS_TASKS, set())
 
-        logging.info("****************** NEW ID" + self._redis.hget(key, 'fwk_id'))
-        logging.info("****************** TASKS:" + self._redis.hget(key, 'max_tasks'))
+        logging.info("****************** NEW ID" + self._redis.hget(key, REDIS_ID))
+        logging.info("****************** MAX TASKS:" + self._redis.hget(key, REDIS_MAX_TASKS))
+        logging.info("****************** TASKS:" + self._redis.hget(key, REDIS_TASKS))
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
         logging.info("************registered     " + frameworkId['value'])
-        self.saveOrUpdateState(driver._framework['name'],
+        self.saveOrUpdateState(driver, driver._framework['name'],
                                int(os.getenv('MAX_TASKS')),
                                frameworkId['value'])
         logging.info("<---")
@@ -58,19 +94,13 @@ class MinimalScheduler(Scheduler):
 
     def checkTask(self, frameworkName):
 
-        if int(self._redis.hget(frameworkName, 'max_tasks')) <= 0:
+        if int(self._redis.hget(frameworkName, REDIS_MAX_TASKS)) <= 0:
             logging.info("Reached xmaximum number of tasks")
             raise Exception('maximum number of tasks')
         else:
             logging.info("number tasks available = " + self._redis.hget(frameworkName,
-                                                                        'max_tasks') + " of " + os.getenv("MAX_TASKS"))
+                                                                        REDIS_MAX_TASKS) + " of " + os.getenv("MAX_TASKS"))
             self._redis.hincrby(frameworkName, 'max_tasks', -1)
-            # logging.info(framework)
-            # logging.info(_redis.get('foo'))
-            # queue????
-            # self._redis.decr('foo')
-            # if self._redis.get('foo') < 0:
-            #   raise Exception('maximum number of tasks')
 
     def resourceOffers(self, driver, offers):
         filters = {'refuse_seconds': 5}
@@ -98,10 +128,10 @@ class MinimalScheduler(Scheduler):
                 ]
                 task.command.shell = True
                 task.command.value = '/app/task.sh ' + self._message
-                # task.command.arguments = [self._message]
-                # logging.info(task)
                 logging.info(
                     "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
+                #add task to the redis metadata
+                self.addTaskToState(driver._framework['name'],task)
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
                 # traceback.print_exc()
@@ -119,9 +149,11 @@ class MinimalScheduler(Scheduler):
                       update.state)
         if update.state == "TASK_FINISHED":
             logging.info("take another task for framework" + driver.framework_id + " " + driver._framework['name'])
-            self._redis.hincrby(driver._framework['name'], 'max_tasks', 1)
+            self._redis.hincrby(driver._framework['name'], REDIS_MAX_TASKS, 1)
+            # remove task from the redis metadata
+            self.removeTaskFromState(driver._framework['name'], update.task_id.value)
             logging.info("tasks availables = " + self._redis.hget(driver._framework['name'],
-                                                                  'max_tasks') + " of " + os.getenv("MAX_TASKS"))
+                                                                  REDIS_MAX_TASKS) + " of " + os.getenv("MAX_TASKS"))
 
 
 def main(message):
