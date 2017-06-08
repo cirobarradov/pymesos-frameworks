@@ -25,9 +25,9 @@ class MinimalScheduler(Scheduler):
         self._redis = conn
         self._message = message
 
-   '''
-    Method that get all task from framework (key) state and send them to be reconciled
     '''
+    Method that get all task from framework (key) state and send them to be reconciled
+    ''' 
     def reconcileTasksFromState(self,driver,key):
         logging.info("RECONCILE TASKS")
         tasks=[]
