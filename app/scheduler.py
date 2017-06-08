@@ -39,8 +39,11 @@ class MinimalScheduler(Scheduler):
             logging.info(redisTasks)
             logging.info("3")
             aux = eval(redisTasks)
+            logging.info(type(aux))
             for elto in aux:
                 tasks.append(eval(elto[1]))
+            logging.info("4")
+            logging.info(tasks)
             driver.reconcileTasks(tasks)
             
     '''
