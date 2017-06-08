@@ -32,6 +32,8 @@ class MinimalScheduler(Scheduler):
         logging.info("RECONCILE TASKS")
         tasks=[]
         redisTasks = self._redis.hget(key, REDIS_TASKS)
+        logging.info("type")
+        logging.info(type(redisTasks))
         if tasks is not None:
             aux = eval(redisTasks)
             for elto in aux:
