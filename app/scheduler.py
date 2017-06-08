@@ -33,6 +33,8 @@ class MinimalScheduler(Scheduler):
         tasks=[]
         redisTasks = self._redis.hget(key, REDIS_TASKS)
         if redisTasks is not None:
+            print(type(redisTasks))
+            print(redisTasks)
             aux = eval(redisTasks)
             for elto in aux:
                 tasks.append(eval(elto[1]))
