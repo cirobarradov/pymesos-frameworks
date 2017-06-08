@@ -25,17 +25,19 @@ class MinimalScheduler(Scheduler):
         self._redis = conn
         self._message = message
 
-    '''
+   '''
     Method that get all task from framework (key) state and send them to be reconciled
     '''
     def reconcileTasksFromState(self,driver,key):
         logging.info("RECONCILE TASKS")
         tasks=[]
-        aux = eval(self._redis.hget(key, REDIS_TASKS))
-        for elto in aux:
-            tasks.append(eval(elto[1]))
-        driver.reconcileTasks(tasks)
-
+        redisTasks = self._redis.hget(key, REDIS_TASKS)
+        if tasks is not None:
+            aux = eval(redisTasks)
+            for elto in aux:
+                tasks.append(eval(elto[1]))
+            driver.reconcileTasks(tasks)
+            
     '''
     Method that adds a task to framework (key) state
     '''
