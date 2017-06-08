@@ -74,7 +74,7 @@ class MinimalScheduler(Scheduler):
             logging.info("framework already registered in redis")
             self.reconcileTasksFromState(driver,key)
             #self._redis.hset(key, 'max_tasks', max_tasks)
-            logging.info("****************** OLD ID" + self._redis.hget(key, REDIS_ID))
+            logging.info("****************** OLD ID" + str(self._redis.hget(key, REDIS_ID)))
             self._redis.hset(key, REDIS_ID, id)
 
         else:
@@ -83,13 +83,13 @@ class MinimalScheduler(Scheduler):
             self._redis.hset(key, REDIS_ID, id)
             self._redis.hset(key, REDIS_TASKS, set())
 
-        logging.info("****************** NEW ID" + self._redis.hget(key, REDIS_ID))
-        logging.info("****************** MAX TASKS:" + self._redis.hget(key, REDIS_MAX_TASKS))
-        logging.info("****************** TASKS:" + self._redis.hget(key, REDIS_TASKS))
+        logging.info("****************** NEW ID" + str(self._redis.hget(key, REDIS_ID)))
+        logging.info("****************** MAX TASKS:" + str(self._redis.hget(key, REDIS_MAX_TASKS)))
+        logging.info("****************** TASKS:" + str(self._redis.hget(key, REDIS_TASKS)))
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
-        logging.info("************registered     " + frameworkId['value'])
+        logging.info("************registered     " + str(frameworkId['value']))
         self.saveOrUpdateState(driver, driver._framework['name'],
                                int(os.getenv('MAX_TASKS')),
                                frameworkId['value'])
@@ -108,8 +108,8 @@ class MinimalScheduler(Scheduler):
             logging.info("Reached xmaximum number of tasks")
             raise Exception('maximum number of tasks')
         else:
-            logging.info("number tasks available = " + self._redis.hget(frameworkName,
-                                                                        REDIS_MAX_TASKS) + " of " + os.getenv("MAX_TASKS"))
+            logging.info("number tasks available = " + str(self._redis.hget(frameworkName,
+                                                                        REDIS_MAX_TASKS)) + " of " + str(os.getenv("MAX_TASKS")))
             self._redis.hincrby(frameworkName, 'max_tasks', -1)
 
     def resourceOffers(self, driver, offers):
