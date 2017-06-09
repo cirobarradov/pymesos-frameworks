@@ -149,6 +149,7 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
+        print("frameworkid " + update.framework_id + " executor_id " + update.executor_id + " slave_id " + update.slave_id + " latest_state " + update.latest_state)
         if (update.state == "TASK_FINISHED") or (update.state== "TASK_LOST"):
             logging.info("take another task for framework" + driver.framework_id + " " + driver._framework['name'])
             self._redis.hincrby(driver._framework['name'], REDIS_MAX_TASKS, 1)
