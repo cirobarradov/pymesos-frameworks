@@ -47,7 +47,6 @@ class MinimalScheduler(Scheduler):
         logging.info("<---")
 
     def resourceOffers(self, driver, offers):
-        print("HOLA HOLA HOLA HOLA")
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
