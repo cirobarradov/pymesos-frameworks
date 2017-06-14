@@ -49,9 +49,7 @@ class MinimalScheduler(Scheduler):
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
-                logging.info("check task")
                 self._helper.checkTask(self._fwk_name,REDIS_TASKS_SET,self._max_tasks)
-                logging.info("checked")
                 cpus = self.getResource(offer.resources, 'cpus')
                 mem = self.getResource(offer.resources, 'mem')
                 if cpus < TASK_CPU or mem < TASK_MEM:
