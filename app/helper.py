@@ -52,5 +52,4 @@ class Helper():
     '''
     def getNumberOfTasks(self, key,taskSetName):
         return len(self.getTasksSet(key, taskSetName))
-        #return len(eval(redis.hget(key, setName)))
 
