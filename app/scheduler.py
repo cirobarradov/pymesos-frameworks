@@ -77,7 +77,6 @@ class MinimalScheduler(Scheduler):
                     "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
 
                 self._helper.addTaskToState(self._fwk_name,REDIS_TASKS_SET,task)
-                print(self._helper.getNumberOfTasks(self._fwk_name,REDIS_TASKS_SET))
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
                 # traceback.print_exc()
@@ -98,8 +97,7 @@ class MinimalScheduler(Scheduler):
             #self._redis.hincrby(self._fwk_name, 'max_tasks', 1)
             self._helper.removeTaskFromState(self._fwk_name, update.task_id.value,REDIS_TASKS_SET)
             logging.info(
-                "tasks availables = " + self._redis.hget(self._fwk_name, 'max_tasks') + " of " + self._max_tasks)
-
+            "tasks used = " + str(self._helper.getNumberOfTasks(self._fwk_name, REDIS_TASKS_SET)) + " of " + self._max_tasks)
 
 def main(message, master, task_imp, max_tasks, redis_server):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
