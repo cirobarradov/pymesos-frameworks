@@ -8,7 +8,7 @@
 
 . /venv/bin/activate
 #python /app/scheduler.py $1 $2 $3 $4 $5 &
-exec python /app/scheduler.py $1 $2 $3 $4 $5
+exec python /app/scheduler.py $1 $2 $3 $4 $5 $6
 
 #child=$! 
 #wait "$child"
