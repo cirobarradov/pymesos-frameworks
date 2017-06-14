@@ -26,7 +26,7 @@ class MinimalScheduler(Scheduler):
         self._master = master
         self._max_tasks = max_tasks
         self._task_imp = task_imp
-        self._helper = helper.Helper(connection,fwk_name)
+        self._helper=helper.Helper(connection,fwk_name)
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
@@ -47,6 +47,7 @@ class MinimalScheduler(Scheduler):
         logging.info("<---")
 
     def resourceOffers(self, driver, offers):
+        print("HOLA HOLA HOLA HOLA")
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
@@ -55,7 +56,6 @@ class MinimalScheduler(Scheduler):
                 mem = self.getResource(offer.resources, 'mem')
                 if cpus < TASK_CPU or mem < TASK_MEM:
                     continue
-
                 task = Dict()
                 task_id = str(uuid.uuid4())
                 task.task_id.value = task_id
@@ -103,12 +103,12 @@ class MinimalScheduler(Scheduler):
                     self._helper.getNumberOfTasks(REDIS_TASKS_SET)) + " of " + self._max_tasks)
 
 
-def main(message, master, task_imp, max_tasks, redis_server):
+def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
 
     framework = Dict()
     framework.user = getpass.getuser()
-    framework.name = "MinimalFramework"
+    framework.name = fwkName
     framework.hostname = socket.gethostname()
 
     if connection.hexists(framework.name, REDIS_FW_ID):
@@ -116,7 +116,7 @@ def main(message, master, task_imp, max_tasks, redis_server):
         framework.id = dict(value=connection.hget(framework.name, REDIS_FW_ID))
 
     driver = MesosSchedulerDriver(
-        MinimalScheduler(message, master, task_imp, max_tasks, connection, framework.name),
+        MinimalScheduler(message, master, task_imp, max_tasks, connection, fwkName),
         framework,
         master,
         use_addict=True,
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     import logging
 
     logging.basicConfig(level=logging.DEBUG)
-    if len(sys.argv) != 6:
-        print("Usage: {} <message> <master> <task> <max_tasks> <redis_server>".format(sys.argv[0]))
+    if len(sys.argv) != 7:
+        print("Usage: {} <message> <master> <task> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
         sys.exit(1)
     else:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
