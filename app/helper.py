@@ -1,14 +1,15 @@
 
-
-
-
 class Helper():
 
-    def __init__(self,redis):
+    def __init__(self,redis,fwk_name):
         self._redis = redis
+        self._fwk_name= fwk_name
 
-    def getTasksSet(self,key,setName):
-        tasks = self._redis.hget(key,setName)
+    def register(self, key, value):
+        self._redis.hset(self._fwk_name, key, value)
+
+    def getTasksSet(self,setName):
+        tasks = self._redis.hget(self._fwk_name,setName)
         if tasks == None:
             res = set()
         else:
@@ -19,37 +20,37 @@ class Helper():
     Method that checks if the scheduler can manage another task, checking if the number of tasks isn't greather than
      the maximum number of tasks parameter
     '''
-    def checkTask(self, key, taskSetName,maxTasks):
-        if self.getNumberOfTasks(key,taskSetName)>=int(maxTasks):
+    def checkTask(self, taskSetName,maxTasks):
+        if self.getNumberOfTasks(self._fwk_name,taskSetName)>=int(maxTasks):
             print("Reached maximum number of tasks")
             raise Exception('maximum number of tasks')
         else:
             print(
-                "number tasks available = " + self.getNumberOfTasks(key,taskSetName).__str__() + " of " + maxTasks)
+                "number tasks available = " + self.getNumberOfTasks(self._fwk_name,taskSetName).__str__() + " of " + maxTasks)
 
 
     '''
     Method that adds a task to framework (key) state    
     '''
-    def addTaskToState(self, key, taskSetName,task):
-        aux = self.getTasksSet(key,taskSetName)
+    def addTaskToState(self, taskSetName,task):
+        aux = self.getTasksSet(self._fwk_name,taskSetName)
         tuple = (task.task_id.value, str(task))
         aux.add(tuple)
-        self._redis.hset(key, taskSetName, aux)
+        self._redis.hset(self._fwk_name, taskSetName, aux)
     '''
     Method that removes a task from framework (key) state
     '''
-    def removeTaskFromState(self,key,taskId,taskSetName):
-        aux = self.getTasksSet(key, taskSetName)
+    def removeTaskFromState(self,taskId,taskSetName):
+        aux = self.getTasksSet(self._fwk_name, taskSetName)
         #aux = eval(self._redis.hget(key, taskSetName))
         d=dict(aux)
         tuple=(taskId,d[taskId])
         aux.remove(tuple)
-        self._redis.hset(key, taskSetName, aux)
+        self._redis.hset(self._fwk_name, taskSetName, aux)
 
     '''
     Method that returns the number of tasks managed by one framework(key)
     '''
-    def getNumberOfTasks(self, key,taskSetName):
-        return len(self.getTasksSet(key, taskSetName))
+    def getNumberOfTasks(self,taskSetName):
+        return len(self.getTasksSet(self._fwk_name, taskSetName))
 
