@@ -41,7 +41,7 @@ class Helper():
     Method that removes a task from framework (key) state
     '''
     def removeTaskFromState(self,taskId,taskSetName):
-        aux = self.getTasksSet(self._fwk_name, taskSetName)
+        aux = self.getTasksSet(taskSetName)
         #aux = eval(self._redis.hget(key, taskSetName))
         d=dict(aux)
         tuple=(taskId,d[taskId])
