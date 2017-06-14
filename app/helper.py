@@ -5,8 +5,8 @@ class Helper():
         self._redis = redis
         self._fwk_name= fwk_name
 
-    def register(self, key, value):
-        self._redis.hset(self._fwk_name, key, value)
+    def register(self, id, value):
+        self._redis.hset(self._fwk_name, id, value)
 
     def getTasksSet(self,setName):
         tasks = self._redis.hget(self._fwk_name,setName)
@@ -33,7 +33,7 @@ class Helper():
     Method that adds a task to framework (key) state    
     '''
     def addTaskToState(self, taskSetName,task):
-        aux = self.getTasksSet(self._fwk_name,taskSetName)
+        aux = self.getTasksSet(taskSetName)
         tuple = (task.task_id.value, str(task))
         aux.add(tuple)
         self._redis.hset(self._fwk_name, taskSetName, aux)
@@ -53,6 +53,8 @@ class Helper():
     '''
     def getNumberOfTasks(self,taskSetName):
         return len(self.getTasksSet( taskSetName))
+
+
 
 
 
