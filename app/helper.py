@@ -21,12 +21,12 @@ class Helper():
      the maximum number of tasks parameter
     '''
     def checkTask(self, taskSetName,maxTasks):
-        if self.getNumberOfTasks(self._fwk_name,taskSetName)>=int(maxTasks):
+        if self.getNumberOfTasks(taskSetName)>=int(maxTasks):
             print("Reached maximum number of tasks")
             raise Exception('maximum number of tasks')
         else:
             print(
-                "number tasks available = " + self.getNumberOfTasks(self._fwk_name,taskSetName).__str__() + " of " + maxTasks)
+                "number tasks available = " + self.getNumberOfTasks(taskSetName).__str__() + " of " + maxTasks)
 
 
     '''
@@ -52,5 +52,7 @@ class Helper():
     Method that returns the number of tasks managed by one framework(key)
     '''
     def getNumberOfTasks(self,taskSetName):
-        return len(self.getTasksSet(self._fwk_name, taskSetName))
+        return len(self.getTasksSet( taskSetName))
+
+
 
