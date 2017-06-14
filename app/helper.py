@@ -26,7 +26,7 @@ class Helper():
             raise Exception('maximum number of tasks')
         else:
             print(
-                "number tasks available = " + self.getNumberOfTasks(taskSetName).__str__() + " of " + maxTasks)
+                "number tasks used = " + self.getNumberOfTasks(taskSetName).__str__() + " of " + maxTasks)
 
 
     '''
