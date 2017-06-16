@@ -40,10 +40,10 @@ class Helper():
     def getTaskState(self,update):
         task=Dict()
         #generate keys
-        containerKey=self.getContainerKey(update.value)
-        sourceKey=self.getSourceKey(update.value)
-        stateKey=self.getStateKey(update.value)
-        agentKey=self.getAgentKey(update.value)
+        containerKey=self.getContainerKey(update.task_id.value)
+        sourceKey=self.getSourceKey(update.task_id.value)
+        stateKey=self.getStateKey(update.task_id.value)
+        agentKey=self.getAgentKey(update.task_id.value)
         task[containerKey] = update.container_status
         task[sourceKey] = update.source
         task[stateKey] = update.state

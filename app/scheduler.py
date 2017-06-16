@@ -122,7 +122,6 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     framework.user = getpass.getuser()
     framework.name = fwkName
     framework.hostname = socket.gethostname()
-    print(framework)
     if connection.hexists(framework.name, constants.REDIS_FW_ID):
         logging.info("framework id already registered in redis")
         framework.id = dict(value=connection.hget(framework.name, constants.REDIS_FW_ID))
