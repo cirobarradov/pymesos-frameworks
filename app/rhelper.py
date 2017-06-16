@@ -58,6 +58,7 @@ class Helper():
     maxTasks (string) : maximum number of allowed tasks
     '''
     def checkTask(self,maxTasks):
+        print("CHECK TASK: " + str(self.getNumberOfTasks())+ " "+maxTasks)
         if self.getNumberOfTasks()>=int(maxTasks):
             print("Reached maximum number of tasks")
             raise Exception('maximum number of tasks')
