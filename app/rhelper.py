@@ -80,6 +80,8 @@ class Helper():
     '''
     def addTaskToState(self,updateTask):
         task=self.getTaskState(updateTask)
+        print("add task")
+        print(task)
         self._redis.hmset(self._fwk_name, task)
     '''
     Method that removes a task from framework (key) state
