@@ -24,6 +24,7 @@ class Helper():
         update.source=''
         update.state='STAGING'
         update.agent_id=''
+        return update
     '''
     methods to generate update keys
     '''
@@ -43,7 +44,6 @@ class Helper():
         sourceKey=self.getSourceKey(update.value)
         stateKey=self.getStateKey(update.value)
         agentKey=self.getAgentKey(update.value)
-
         task[containerKey] = update.container_status
         task[sourceKey] = update.source
         task[stateKey] = update.state

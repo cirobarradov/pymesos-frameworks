@@ -106,7 +106,6 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-        print(update)
         self._helper.addTaskToState(update)
         if update.state == "TASK_FINISHED":
             logging.info("take another task for framework" + driver.framework_id)
