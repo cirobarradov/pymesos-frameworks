@@ -90,8 +90,7 @@ class MinimalScheduler(Scheduler):
                 # logging.info(task)
                 logging.info(
                     "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
-                self._helper.addTaskToState(task_id,'True','RUNNING')
-                print(self._helper.getNumberOfTasks())
+                self._helper.addTaskToState(self._helper.initUpdateValue(task_id))
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
                 # traceback.print_exc()
@@ -107,7 +106,8 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-        logging.info(update)
+        print(update)
+        self._helper.addTaskToState(update)
         if update.state == "TASK_FINISHED":
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)

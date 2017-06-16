@@ -17,19 +17,37 @@ class Helper():
             res = eval(tasks)
         return res
 
-    def getHealthKey(self,taskId):
-        return taskId+constants.HEALTHY_KEY_TAG
+    def initUpdateValue(self,taskId):
+        update=Dict()
+        update.value=taskId
+        update.container_status=''
+        update.source=''
+        update.state='STAGING'
+        update.agent_id=''
+    '''
+    methods to generate update keys
+    '''
+    def getContainerKey(self,taskId):
+        return taskId+constants.CONTAINER_KEY_TAG
+    def getSourceKey(self,taskId):
+        return taskId+constants.SOURCE_KEY_TAG
+    def getStateKey(self,taskId):
+        return taskId+constants.STATE_KEY_TAG
+    def getAgentKey(self,taskId):
+        return taskId+constants.AGENT_KEY_TAG
 
-    def getStatusKey(self, taskId):
-        return taskId+constants.STATUS_KEY_TAG
-
-    def getTaskState(self,taskId,healthy,status):
+    def getTaskState(self,update):
         task=Dict()
-        healthKey=self.getHealthKey(taskId)
-        statusKey=self.getStatusKey(taskId)
+        #generate keys
+        containerKey=self.getContainerKey(update.value)
+        sourceKey=self.getSourceKey(update.value)
+        stateKey=self.getStateKey(update.value)
+        agentKey=self.getAgentKey(update.value)
 
-        task[healthKey] = healthy
-        task[statusKey] = status
+        task[containerKey] = update.container_status
+        task[sourceKey] = update.source
+        task[stateKey] = update.state
+        task[agentKey] = update.agent_id
         return task
 
     '''
@@ -52,12 +70,15 @@ class Helper():
     Method that adds a task to framework (key) state 
     Parameters
     ----------
-    taskId (string): identifier of the task
-    healthy (string): healthy state of the task (true/false)
-    status: current status of the task (running,lost,...)
+    updateTask(Dictionary): information about task that contains:
+        taskId (string): identifier of the task
+        container(string)
+        source (string)
+        status (string): current status of the task (running,lost,...)
+        agent (string)
     '''
-    def addTaskToState(self,taskId,healthy,status):
-        task=self.getTaskState(taskId,healthy,status)
+    def addTaskToState(self,updateTask):
+        task=self.getTaskState(updateTask)
         self._redis.hmset(self._fwk_name, task)
     '''
     Method that removes a task from framework (key) state
@@ -73,5 +94,5 @@ class Helper():
     Method that returns the number of tasks managed by one framework(key)
     '''
     def getNumberOfTasks(self):
-        return len(self._redis.hkeys(self._fwk_name))//2
+        return len(self._redis.hkeys(self._fwk_name))//4
 
