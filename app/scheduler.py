@@ -6,18 +6,14 @@ import socket
 import signal
 import getpass
 from threading import Thread
-import helper,redis
+import redis
+import constants
+import rhelper
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
 
-TASK_CPU = 0.2
-TASK_MEM = 32
-EXECUTOR_CPUS = 1
-EXECUTOR_MEM = 32
 
-REDIS_TASKS_SET = "tasks"
-REDIS_FW_ID='fwk_id'
 
 class MinimalScheduler(Scheduler):
     def __init__(self, message, master, task_imp, max_tasks, connection, fwk_name):
@@ -26,17 +22,13 @@ class MinimalScheduler(Scheduler):
         self._master = master
         self._max_tasks = max_tasks
         self._task_imp = task_imp
-        self._helper=helper.Helper(connection,fwk_name)
+        self._helper=rhelper.Helper(connection,fwk_name)
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
         logging.info("************registered     ")
-        #self._redis.hset(self._fwk_name, 'max_tasks', int(self._max_tasks))
         logging.info(frameworkId)
-        self._helper.register( REDIS_FW_ID, frameworkId['value'])
-        #self._redis.hset(self._fwk_name, REDIS_FW_ID, frameworkId['value'])
-        # logging.info(masterInfo)
-        # logging.info(driver)
+        self._helper.register( frameworkId['value'])
         logging.info("<---")
 
     def reregistered(self, driver, masterInfo):
@@ -46,14 +38,37 @@ class MinimalScheduler(Scheduler):
         logging.info(driver)
         logging.info("<---")
 
+    '''
+    Method that get all task from framework (key) state and send them to be reconciled
+    '''
+    def reconcileTasksFromState(self,driver,key):
+        print("RECONCILE TASKS")
+        tasks=[]
+        redisTasks = self._redis.hget(key, "tasks")
+        if redisTasks is not None:
+            print("1")
+            print(type(redisTasks))
+            print("2")
+            print(redisTasks)
+            print("3")
+            print("RECONCILE TASKS")
+            aux = eval(redisTasks)
+            print(type(aux))
+            for elto in aux:
+                tasks.append(eval(elto[1]))
+                print("4")
+                print(tasks)
+            driver.reconcileTasks(tasks)
+
     def resourceOffers(self, driver, offers):
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
-                self._helper.checkTask(REDIS_TASKS_SET,self._max_tasks)
+                #checking if the framework can handle more tasks (looking the maximum number of allowed tasks)
+                self._helper.checkTask(self._max_tasks)
                 cpus = self.getResource(offer.resources, 'cpus')
                 mem = self.getResource(offer.resources, 'mem')
-                if cpus < TASK_CPU or mem < TASK_MEM:
+                if cpus < constants.TASK_CPU or mem < constants.TASK_MEM:
                     continue
                 task = Dict()
                 task_id = str(uuid.uuid4())
@@ -66,8 +81,8 @@ class MinimalScheduler(Scheduler):
                 task.container.docker.force_pull_image = True
 
                 task.resources = [
-                    dict(name='cpus', type='SCALAR', scalar={'value': TASK_CPU}),
-                    dict(name='mem', type='SCALAR', scalar={'value': TASK_MEM}),
+                    dict(name='cpus', type='SCALAR', scalar={'value': constants.TASK_CPU}),
+                    dict(name='mem', type='SCALAR', scalar={'value': constants.TASK_MEM}),
                 ]
                 task.command.shell = True
                 task.command.value = '/app/task.sh ' + self._message
@@ -75,9 +90,8 @@ class MinimalScheduler(Scheduler):
                 # logging.info(task)
                 logging.info(
                     "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
-
-                self._helper.addTaskToState(REDIS_TASKS_SET,task)
-                print(self._helper.getNumberOfTasks(REDIS_TASKS_SET))
+                self._helper.addTaskToState(task_id,'True','RUNNING')
+                print(self._helper.getNumberOfTasks())
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
                 # traceback.print_exc()
@@ -93,13 +107,13 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-
+        print(update)
         if update.state == "TASK_FINISHED":
             logging.info("take another task for framework" + driver.framework_id)
-            self._helper.removeTaskFromState(update.task_id.value,REDIS_TASKS_SET)
+            self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
                 "tasks used = " + str(
-                    self._helper.getNumberOfTasks(REDIS_TASKS_SET)) + " of " + self._max_tasks)
+                    self._helper.getNumberOfTasks(constants.REDIS_TASKS_SET)) + " of " + self._max_tasks)
 
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
@@ -109,10 +123,10 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     framework.user = getpass.getuser()
     framework.name = fwkName
     framework.hostname = socket.gethostname()
-
-    if connection.hexists(framework.name, REDIS_FW_ID):
+    print(framework)
+    if connection.hexists(framework.name, constants.REDIS_FW_ID):
         logging.info("framework id already registered in redis")
-        framework.id = dict(value=connection.hget(framework.name, REDIS_FW_ID))
+        framework.id = dict(value=connection.hget(framework.name, constants.REDIS_FW_ID))
 
     driver = MesosSchedulerDriver(
         MinimalScheduler(message, master, task_imp, max_tasks, connection, fwkName),
