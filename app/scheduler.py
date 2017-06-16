@@ -107,13 +107,13 @@ class MinimalScheduler(Scheduler):
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-        print(update)
+        logging.info(update)
         if update.state == "TASK_FINISHED":
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
                 "tasks used = " + str(
-                    self._helper.getNumberOfTasks(constants.REDIS_TASKS_SET)) + " of " + self._max_tasks)
+                    self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
 
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
