@@ -40,10 +40,7 @@ class Helper():
 
     def getTaskState(self,update):
         task=Dict()
-        print("get task state")
         #generate keys
-        print(update)
-        print(update.task_id.value)
         containerKey=self.getContainerKey(update.task_id.value)
         sourceKey=self.getSourceKey(update.task_id.value)
         stateKey=self.getStateKey(update.task_id.value)
@@ -83,10 +80,7 @@ class Helper():
         agent (string)
     '''
     def addTaskToState(self,updateTask):
-        print("add task to state")
-        print(updateTask)
         task=self.getTaskState(updateTask)
-        print(task)
         self._redis.hmset(self._fwk_name, task)
     '''
     Method that removes a task from framework (key) state
@@ -94,9 +88,11 @@ class Helper():
     ----------
     taskId (string): identifier of the task
     '''
-    def removeTaskFromState(self,taskId):
-        self._redis.hdel(self._fwk_name,self.getHealthKey(taskId))
-        self._redis.hdel(self._fwk_name, self.getStatusKey(taskId))
+    def removeTaskFromState(self,taskId):   
+        self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
+        self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
+        self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
+        self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
 
     '''
     Method that returns the number of tasks managed by one framework(key)
