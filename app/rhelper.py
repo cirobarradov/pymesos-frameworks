@@ -79,8 +79,9 @@ class Helper():
         agent (string)
     '''
     def addTaskToState(self,updateTask):
+        print("add task to state")
+        print(updateTask)
         task=self.getTaskState(updateTask)
-        print("add task")
         print(task)
         self._redis.hmset(self._fwk_name, task)
     '''
