@@ -23,7 +23,7 @@ class Helper():
         update.task_id.value=taskId
         update.container_status=''
         update.source=''
-        update.state='STAGING'
+        update.state='RUNNING'
         update.agent_id=''
         return update
     '''
