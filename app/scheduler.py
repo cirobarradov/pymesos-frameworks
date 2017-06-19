@@ -90,12 +90,7 @@ class MinimalScheduler(Scheduler):
                 # logging.info(task)
                 logging.info(
                     "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
-                logging.info("addtasktostate")
-                metaDataTask=self._helper.initUpdateValue(task_id)
-                logging.info(metaDataTask)
-                logging.info(type(metaDataTask))
-                self._helper.addTaskToState(metaDataTask)
-                logging.info("launchtasks")
+                self._helper.addTaskToState(self._helper.initUpdateValue(task_id))
                 driver.launchTasks(offer.id, [task], filters)
             except Exception:
                 # traceback.print_exc()
