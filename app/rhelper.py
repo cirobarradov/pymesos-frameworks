@@ -1,5 +1,7 @@
 from addict import Dict
+
 import constants
+from redis.connection import ConnectionError
 class Helper():
 
     def __init__(self,redis,fwk_name):
@@ -7,14 +9,20 @@ class Helper():
         self._fwk_name= fwk_name
 
     def register(self, value):
-        self._redis.hset(self._fwk_name, constants.REDIS_FW_ID, value)
+        try:
+            self._redis.hset(self._fwk_name, constants.REDIS_FW_ID, value)
+        except ConnectionError:
+            print("ERROR exception error register")
 
     def getTasksSet(self,setName):
-        tasks = self._redis.hget(self._fwk_name,setName)
-        if tasks == None:
-            res = set()
-        else:
-            res = eval(tasks)
+        try:
+            tasks = self._redis.hget(self._fwk_name,setName)
+            if tasks == None:
+                res = set()
+            else:
+                res = eval(tasks)
+        except ConnectionError:
+            print("ERROR exception error register")
         return res
 
     def initUpdateValue(self,taskId):
@@ -23,7 +31,7 @@ class Helper():
         update.task_id.value=taskId
         update.container_status=''
         update.source=''
-        update.state='RUNNING'
+        update.state='STAGING'
         update.agent_id=''
         return update
     '''
@@ -80,25 +88,31 @@ class Helper():
         agent (string)
     '''
     def addTaskToState(self,updateTask):
-        task=self.getTaskState(updateTask)
-        print("update task")
-        print(task)
-        self._redis.hmset(self._fwk_name, task)
+        try:
+            task=self.getTaskState(updateTask)
+            self._redis.hmset(self._fwk_name, task)
+        except ConnectionError:
+            print ("ERROR add task to state")
     '''
     Method that removes a task from framework (key) state
     Parameters
     ----------
     taskId (string): identifier of the task
     '''
-    def removeTaskFromState(self,taskId):   
-        self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
-        self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
-        self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
-        self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
+    def removeTaskFromState(self,taskId):
+        try:
+            self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
+            self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
+            self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
+            self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
+        except ConnectionError:
+            print ("ERROR remove Task From State")
 
     '''
     Method that returns the number of tasks managed by one framework(key)
     '''
     def getNumberOfTasks(self):
-        return len(self._redis.hkeys(self._fwk_name))//4
-
+        try:
+            return len(self._redis.hkeys(self._fwk_name))//4
+        except ConnectionError:
+            print ("ERROR get Number Of Tasks")
