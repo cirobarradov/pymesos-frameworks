@@ -41,6 +41,8 @@ class Helper():
         task=Dict()
         print("get task state")
         #generate keys
+        print(update.value)
+        print(update)
         containerKey=self.getContainerKey(update.value)
         sourceKey=self.getSourceKey(update.value)
         stateKey=self.getStateKey(update.value)
