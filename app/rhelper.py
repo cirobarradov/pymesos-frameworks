@@ -27,6 +27,9 @@ class Helper():
             print("ERROR exception error register")
         return res
 
+    def convertTaskIdToSchedulerFormat(self, task):
+        return eval(str(constants.PROTO_TASK_ID) % task)
+    # return eval("{'task_id':{'value':\'%s\'}} " % task)
     '''
         get all task ids stored
     '''

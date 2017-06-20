@@ -18,5 +18,6 @@ REDIS_TASKS_SET = "tasks"
 REDIS_FW_ID='fwk_id'
 
 #CONSTANTS MESSAGES.PROTO
-PROTO_TASK_ID='task_id'
-PROTO_VALUE='value'
+PROTO_TASK_ID={'task_id':{'value':'%s'}}
+#PROTO_TASK_ID='task_id'
+#PROTO_VALUE='value'
