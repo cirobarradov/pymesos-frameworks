@@ -40,18 +40,20 @@ class MinimalScheduler(Scheduler):
         logging.info("<---")
 
     def convertTaskIdToSchedulerFormat(self, task):
+        logging.info("convertTaskIdToSchedulerFormat")
         return {constants.PROTO_TASK_ID:{constants.PROTO_VALUE:task}}
     '''
     Method that get all task from framework state and send them to be reconciled
     '''
     def reconcileTasksFromState(self,driver,tasks):
-        print("RECONCILE TASKS")
+        logging.info("reconcileTasksFromState")
         if tasks is not None:
             driver.reconcileTasks(
                 map(lambda task: self.convertTaskIdToSchedulerFormat(task),
                     tasks))
 
     def resourceOffers(self, driver, offers):
+        logging.info("resourceOffers")
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
