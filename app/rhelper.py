@@ -14,13 +14,26 @@ class Helper():
         except ConnectionError:
             print("ERROR exception error register")
 
-    def getTasksSet(self,setName):
+    '''
+        filter all task ids depending on the task state
+    '''
+    def filterTasks(self,state):
         try:
-            tasks = self._redis.hget(self._fwk_name,setName)
-            if tasks == None:
-                res = set()
-            else:
-                res = eval(tasks)
+            res=map(lambda x: x.replace(constants.STATE_KEY_TAG,constants.BLANK),
+                    filter(lambda x: (constants.STATE_KEY_TAG in x) and
+                                     (self._redis.hget(self._fwk_name,x) == state),
+                           self._redis.hkeys(self._fwk_name)))
+        except ConnectionError:
+            print("ERROR exception error register")
+        return res
+
+    '''
+        get all task ids stored
+    '''
+    def getTasks(self):
+        try:
+            res=map(lambda x: x.replace(constants.STATE_KEY_TAG,constants.BLANK),
+                    filter(lambda x: constants.STATE_KEY_TAG in x, self._redis.hkeys(self._fwk_name)))
         except ConnectionError:
             print("ERROR exception error register")
         return res
@@ -31,7 +44,7 @@ class Helper():
         update.task_id.value=taskId
         update.container_status=''
         update.source=''
-        update.state='STAGING'
+        update.state='RUNNING'
         update.agent_id=''
         return update
     '''

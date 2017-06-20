@@ -23,6 +23,7 @@ class MinimalScheduler(Scheduler):
         self._max_tasks = max_tasks
         self._task_imp = task_imp
         self._helper=rhelper.Helper(connection,fwk_name)
+        self._fwk_name=fwk_name
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
@@ -38,27 +39,17 @@ class MinimalScheduler(Scheduler):
         logging.info(driver)
         logging.info("<---")
 
+    def convertTaskIdToSchedulerFormat(self, task):
+        return {constants.PROTO_TASK_ID:{constants.PROTO_VALUE:task}}
     '''
-    Method that get all task from framework (key) state and send them to be reconciled
+    Method that get all task from framework state and send them to be reconciled
     '''
-    def reconcileTasksFromState(self,driver,key):
+    def reconcileTasksFromState(self,driver,tasks):
         print("RECONCILE TASKS")
-        tasks=[]
-        redisTasks = self._redis.hget(key, "tasks")
-        if redisTasks is not None:
-            print("1")
-            print(type(redisTasks))
-            print("2")
-            print(redisTasks)
-            print("3")
-            print("RECONCILE TASKS")
-            aux = eval(redisTasks)
-            print(type(aux))
-            for elto in aux:
-                tasks.append(eval(elto[1]))
-                print("4")
-                print(tasks)
-            driver.reconcileTasks(tasks)
+        if tasks is not None:
+            driver.reconcileTasks(
+                map(lambda task: self.convertTaskIdToSchedulerFormat(task),
+                    tasks))
 
     def resourceOffers(self, driver, offers):
         filters = {'refuse_seconds': 5}
@@ -113,7 +104,14 @@ class MinimalScheduler(Scheduler):
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
-
+        elif update.state == "TASK_LOST":
+            logging.info("task lost")
+            #reconcile tasks lost
+            self.reconcileTasksFromState(driver,self._helper.filterTasks(update.state))
+        elif update.state == "TASK_FAILED":
+            logging.info("task failed")
+            #reconcile tasks failed
+            self.reconcileTasksFromState(driver, self._helper.filterTasks(update.state))
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
