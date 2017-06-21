@@ -30,6 +30,7 @@ class MinimalScheduler(Scheduler):
         logging.info("************registered     ")
         logging.info(frameworkId)
         self._helper.register( frameworkId['value'])
+        self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
     def reregistered(self, driver, masterInfo):
@@ -37,6 +38,7 @@ class MinimalScheduler(Scheduler):
         logging.info(masterInfo)
         # logging.info(self)
         logging.info(driver)
+        self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
     '''
