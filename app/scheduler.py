@@ -38,6 +38,8 @@ class MinimalScheduler(Scheduler):
         logging.info(masterInfo)
         # logging.info(self)
         logging.info(driver)
+        logging.info("reconcile tasks")
+        logging.info(self._helper.getTasks())
         self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
