@@ -30,7 +30,6 @@ class MinimalScheduler(Scheduler):
         logging.info("************registered     ")
         logging.info(frameworkId)
         self._helper.register( frameworkId['value'])
-        self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
     def reregistered(self, driver, masterInfo):
@@ -38,8 +37,6 @@ class MinimalScheduler(Scheduler):
         logging.info(masterInfo)
         # logging.info(self)
         logging.info(driver)
-        logging.info("reconcile tasks")
-        logging.info(self._helper.getTasks())
         self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
@@ -47,13 +44,18 @@ class MinimalScheduler(Scheduler):
     Method that get all task from framework state and send them to be reconciled
     '''
     def reconcileTasksFromState(self,driver,tasks):
-        print("RECONCILE TASKS")
+        logging.info("RECONCILE TASKS")
         if tasks is not None:
+            #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
+            logging.info("SUPRESS OFFERS")
+            driver.suppressOffers()
             driver.reconcileTasks(
                 map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
                     tasks))
 
     def resourceOffers(self, driver, offers):
+        logging.info("-----------resource offers ------------- ")
+        logging.info(offers)
         filters = {'refuse_seconds': 5}
         for offer in offers:
             try:
@@ -109,11 +111,9 @@ class MinimalScheduler(Scheduler):
         elif update.state == "TASK_LOST":
             logging.info("task lost")
             #reconcile tasks lost
-            self.reconcileTasksFromState(driver,self._helper.filterTasks(update.state))
         elif update.state == "TASK_FAILED":
             logging.info("task failed")
             #reconcile tasks failed
-            self.reconcileTasksFromState(driver, self._helper.filterTasks(update.state))
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
