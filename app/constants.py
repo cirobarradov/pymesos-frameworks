@@ -16,6 +16,7 @@ AGENT_KEY_TAG = ':agent'
 #CONSTANTS MINIMAL SCHEDULER
 REDIS_TASKS_SET = "tasks"
 REDIS_FW_ID='fwk_id'
+REDIS_RECONCILE='reconcile'
 
 #CONSTANTS MESSAGES.PROTO
 PROTO_TASK_ID={'task_id':{'value':'%s'}}

@@ -15,6 +15,20 @@ class Helper():
             print("ERROR exception error register")
 
     '''
+    set reconcile flag as true or false
+    '''
+    def setReconcileStatus(self, reconcile):
+        try:
+            self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, reconcile)
+        except ConnectionError:
+            print("ERROR exception error setReconcileStatus")
+
+    def getReconcileStatus(self):
+        try:
+            self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)
+        except ConnectionError:
+            print("ERROR exception error setReconcileStatus")
+    '''
         filter all task ids depending on the task state
     '''
     def filterTasks(self,state):
@@ -47,7 +61,7 @@ class Helper():
         update.task_id.value=taskId
         update.container_status=''
         update.source=''
-        update.state='TASK_STAGING'
+        update.state='RUNNING'
         update.agent_id=''
         return update
     '''
