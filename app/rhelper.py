@@ -25,7 +25,7 @@ class Helper():
 
     def getReconcileStatus(self):
         try:
-            self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)
+            return self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)
         except ConnectionError:
             print("ERROR exception error setReconcileStatus")
     '''
