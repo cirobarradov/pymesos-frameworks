@@ -48,8 +48,8 @@ class MinimalScheduler(Scheduler):
         if tasks is not None:
             #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
             logging.info("SUPRESS OFFERS")
-            logging.info("self._helper.setReconcileStatus(True)")
-            print(self._helper.setReconcileStatus(True))
+            logging.info("self._helper.setReconcileStatus(1)")
+            print(self._helper.setReconcileStatus(1))
 
             driver.suppressOffers()
             driver.reconcileTasks(
@@ -113,8 +113,8 @@ class MinimalScheduler(Scheduler):
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
             logging.info(self._helper.getReconcileStatus())
             logging.info(type(self._helper.getReconcileStatus()))
-            if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()==True):
-                self._helper.setReconcileStatus(False)
+            if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()==1):
+                self._helper.setReconcileStatus(0)
                 driver.reviveOffers()
         elif update.state == "TASK_LOST":
             logging.info("task lost")
