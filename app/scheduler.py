@@ -48,8 +48,13 @@ class MinimalScheduler(Scheduler):
         if tasks is not None:
             #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
             logging.info("SUPRESS OFFERS")
+            self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, 1)
+            print(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
+            self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, True)
+            print(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
             logging.info("self._helper.setReconcileStatus(1)")
             print(self._helper.setReconcileStatus(1))
+
 
             driver.suppressOffers()
             driver.reconcileTasks(
