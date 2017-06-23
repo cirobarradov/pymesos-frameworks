@@ -48,6 +48,7 @@ class MinimalScheduler(Scheduler):
         if tasks is not None:
             #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
             logging.info("SUPRESS OFFERS")
+            logging.info("self._helper.setReconcileStatus(True)")
             self._helper.setReconcileStatus(True)
             driver.suppressOffers()
             driver.reconcileTasks(
