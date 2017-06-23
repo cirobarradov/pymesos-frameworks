@@ -22,9 +22,9 @@ class Helper():
             print("set reconcile status")
             print(reconcile)
             self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, reconcile)
-            return reconcile
         except ConnectionError:
             print("ERROR exception error setReconcileStatus")
+        return reconcile
 
     def getReconcileStatus(self):
         try:
