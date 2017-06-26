@@ -48,11 +48,6 @@ class MinimalScheduler(Scheduler):
         if tasks is not None:
             #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
             logging.info("SUPRESS OFFERS")
-            #self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, True)
-            logging.info("2")
-            logging.info(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
-            logging.info(type(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)))
-            logging.info("setting true")
             self._helper.setReconcileStatus(True)
             logging.info(self._helper.getReconcileStatus())
             driver.suppressOffers()
@@ -109,24 +104,23 @@ class MinimalScheduler(Scheduler):
                       update.task_id.value,
                       update.state)
         self._helper.addTaskToState(update)
-        if update.state == "TASK_FINISHED":
+        if (update.state == "TASK_FINISHED") \
+                or (update.state == "TASK_FAILED") \
+                or (update.state == "TASK_KILLED") \
+                or (update.state == "TASK_LOST") \
+                or (update.state == "TASK_ERROR") :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
-            logging.info(" CHECK RECONCILE STATUS UPDATEEEEEEE")
+            logging.info(" CHECK RECONCILE STATUS UPDATE")
             logging.info(self._helper.getReconcileStatus())
-            logging.info(type(self._helper.getReconcileStatus()))
+            logging.info(self._helper.getNumberOfTasks())
             if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()):
                 self._helper.setReconcileStatus(False)
+                logging.info("REVIVE OFFERS")
                 driver.reviveOffers()
-        elif update.state == "TASK_LOST":
-            logging.info("task lost")
-            #reconcile tasks lost
-        elif update.state == "TASK_FAILED":
-            logging.info("task failed")
-            #reconcile tasks failed
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
