@@ -42,14 +42,14 @@ class Helper():
         self.setReconcileStatus(True)
         driver.suppressOffers()
         driver.reconcileTasks(
-            map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
+            map(lambda task: self.convertTaskIdToSchedulerFormat(task),
                 tasks))
 
     def reconcileDown(self, driver):
         logging.info("RECONCILE DOWN")
         # reviveoffers if reconciled
         if (self.getNumberOfTasks() == 0 and self.getReconcileStatus()):
-            self._helper.setReconcileStatus(False)
+            self.setReconcileStatus(False)
             driver.reviveOffers()
     '''
     set reconcile flag as true or false
