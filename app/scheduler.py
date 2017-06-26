@@ -41,11 +41,11 @@ class MinimalScheduler(Scheduler):
         logging.info("<---")
 
     def isFinalState(self,state):
-        return  (state == "TASK_FINISHED") \
-                or (state == "TASK_FAILED") \
-                or (state == "TASK_KILLED") \
-                or (state == "TASK_LOST") \
-                or (state == "TASK_ERROR")
+        return  (state == constants.TASK_FINISHED) \
+                or (state == constants.TASK_FAILED) \
+                or (state == constants.TASK_KILLED) \
+                or (state == constants.TASK_LOST) \
+                or (state == constants.TASK_ERROR)
 
     '''
     Method that get all task from framework state and send them to be reconciled
