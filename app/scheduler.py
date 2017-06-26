@@ -40,6 +40,13 @@ class MinimalScheduler(Scheduler):
         self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
+    def isFinalState(self,state):
+        return  (state == "TASK_FINISHED") \
+                or (state == "TASK_FAILED") \
+                or (state == "TASK_KILLED") \
+                or (state == "TASK_LOST") \
+                or (state == "TASK_ERROR")
+
     '''
     Method that get all task from framework state and send them to be reconciled
     '''
@@ -104,11 +111,7 @@ class MinimalScheduler(Scheduler):
                       update.task_id.value,
                       update.state)
         self._helper.addTaskToState(update)
-        if (update.state == "TASK_FINISHED") \
-                or (update.state == "TASK_FAILED") \
-                or (update.state == "TASK_KILLED") \
-                or (update.state == "TASK_LOST") \
-                or (update.state == "TASK_ERROR") :
+        if self.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
