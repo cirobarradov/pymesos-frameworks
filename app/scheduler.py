@@ -55,11 +55,6 @@ class MinimalScheduler(Scheduler):
             logging.info("setting true")
             self._helper.setReconcileStatus(True)
             logging.info(self._helper.getReconcileStatus())
-            logging.info("3")
-            logging.info("self._helper.setReconcileStatus(1)")
-            logging.info(self._helper.setReconcileStatus(1))
-
-
             driver.suppressOffers()
             driver.reconcileTasks(
                 map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
@@ -120,10 +115,11 @@ class MinimalScheduler(Scheduler):
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
+            logging.info(" CHECK RECONCILE STATUS UPDATEEEEEEE")
             logging.info(self._helper.getReconcileStatus())
             logging.info(type(self._helper.getReconcileStatus()))
-            if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()==1):
-                self._helper.setReconcileStatus(0)
+            if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()):
+                self._helper.setReconcileStatus(False)
                 driver.reviveOffers()
         elif update.state == "TASK_LOST":
             logging.info("task lost")
