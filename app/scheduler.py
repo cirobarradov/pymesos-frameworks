@@ -54,6 +54,7 @@ class MinimalScheduler(Scheduler):
             self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, True)
             logging.info("2")
             logging.info(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
+            logging.info(type(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)))
             logging.info("3")
             logging.info("self._helper.setReconcileStatus(1)")
             logging.info(self._helper.setReconcileStatus(1))
