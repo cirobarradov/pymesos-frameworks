@@ -2,6 +2,11 @@ from addict import Dict
 
 import constants
 from redis.connection import ConnectionError
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 class Helper():
 
     def __init__(self,redis,fwk_name):
@@ -12,7 +17,7 @@ class Helper():
         try:
             self._redis.hset(self._fwk_name, constants.REDIS_FW_ID, value)
         except ConnectionError:
-            print("ERROR exception error register")
+            logging.info("ERROR exception error register")
     '''
         Check is some task is final
     '''
@@ -33,6 +38,7 @@ class Helper():
     Method than launches task reconciliation with a given set of tasks
     '''
     def reconcileUp(self,driver,tasks):
+        logging.info("RECONCILE UP")
         self.setReconcileStatus(True)
         driver.suppressOffers()
         driver.reconcileTasks(
@@ -40,6 +46,7 @@ class Helper():
                 tasks))
 
     def reconcileDown(self, driver):
+        logging.info("RECONCILE DOWN")
         # reviveoffers if reconciled
         if (self.getNumberOfTasks() == 0 and self.getReconcileStatus()):
             self._helper.setReconcileStatus(False)
@@ -49,18 +56,18 @@ class Helper():
     '''
     def setReconcileStatus(self, reconcile):
         try:
-            print("set reconcile status")
-            print(reconcile)
+            logging.info("set reconcile status")
+            logging.info(reconcile)
             self._redis.hset(self._fwk_name, constants.REDIS_RECONCILE, reconcile)
         except ConnectionError:
-            print("ERROR exception error setReconcileStatus")
+            logging.info("ERROR exception error setReconcileStatus")
         return reconcile
 
     def getReconcileStatus(self):
         try:
             return eval(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
         except ConnectionError:
-            print("ERROR exception error getReconcileStatus")
+            logging.info("ERROR exception error getReconcileStatus")
 
     '''
         filter all task ids depending on the task state
@@ -72,7 +79,7 @@ class Helper():
                                      (self._redis.hget(self._fwk_name,x) == state),
                            self._redis.hkeys(self._fwk_name)))
         except ConnectionError:
-            print("ERROR exception error register")
+            logging.info("ERROR exception error register")
         return res
 
     def convertTaskIdToSchedulerFormat(self, task):
@@ -86,7 +93,7 @@ class Helper():
             res=map(lambda x: x.replace(constants.STATE_KEY_TAG,constants.BLANK),
                     filter(lambda x: constants.STATE_KEY_TAG in x, self._redis.hkeys(self._fwk_name)))
         except ConnectionError:
-            print("ERROR exception error register")
+            logging.info("ERROR exception error register")
         return res
 
     def initUpdateValue(self,taskId):
@@ -131,12 +138,12 @@ class Helper():
     maxTasks (string) : maximum number of allowed tasks
     '''
     def checkTask(self,maxTasks):
-        print("CHECK TASK: " + str(self.getNumberOfTasks())+ " "+maxTasks)
+        logging.info("CHECK TASK: " + str(self.getNumberOfTasks())+ " "+maxTasks)
         if self.getNumberOfTasks()>=int(maxTasks):
-            print("Reached maximum number of tasks")
+            logging.info("Reached maximum number of tasks")
             raise Exception('maximum number of tasks')
         else:
-            print(
+            logging.info(
                 "number tasks used = " + self.getNumberOfTasks().__str__() + " of " + maxTasks)
 
 
@@ -156,7 +163,7 @@ class Helper():
             task=self.getTaskState(updateTask)
             self._redis.hmset(self._fwk_name, task)
         except ConnectionError:
-            print ("ERROR add task to state")
+            logging.info ("ERROR add task to state")
     '''
     Method that removes a task from framework (key) state
     Parameters
@@ -170,7 +177,7 @@ class Helper():
             self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
             self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
         except ConnectionError:
-            print ("ERROR remove Task From State")
+            logging.info ("ERROR remove Task From State")
 
     '''
     Method that returns the number of tasks managed by one framework(key)
@@ -179,4 +186,4 @@ class Helper():
         try:
             return len(self._redis.hkeys(self._fwk_name))//4
         except ConnectionError:
-            print ("ERROR get Number Of Tasks")
+            logging.info ("ERROR get Number Of Tasks")

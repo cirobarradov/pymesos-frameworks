@@ -12,12 +12,14 @@ import rhelper
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 
 class BatchScheduler(Scheduler):
     def __init__(self, message, master, task_imp, max_tasks, connection, fwk_name):
-        print("BATCH SCHEDULER")
+        logging.info("BATCH SCHEDULER")
         self._redis = connection
         self._message = message
         self._master = master
@@ -27,9 +29,9 @@ class BatchScheduler(Scheduler):
         self._fwk_name=fwk_name
 
     def statusUpdate(self, driver, update):
-        print("HOLAHOLAHOLAHOLAHOLAHOLA")
+        logging.info("HOLAHOLAHOLAHOLAHOLAHOLA")
         time.sleep(constants.DELAY_BATCH_TIME)
-        print("ADIOSSSSSSSSSSSSSSSSSSSS")
+        logging.info("ADIOSSSSSSSSSSSSSSSSSSSS")
         if self._helper.checkReconciliation(update.state):
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)

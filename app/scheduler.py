@@ -13,7 +13,9 @@ from batchScheduler import BatchScheduler
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 
 class MinimalScheduler(Scheduler):
@@ -116,6 +118,8 @@ class MinimalScheduler(Scheduler):
                       update.task_id.value,
                       update.state)
         self._helper.addTaskToState(update)
+        logging.info("status update")
+        logging.info(update)
         if self._helper.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
@@ -185,9 +189,6 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
 
 
 if __name__ == '__main__':
-    import logging
-
-    logging.basicConfig(level=logging.DEBUG)
     if len(sys.argv) != 7:
         print("Usage: {} <message> <master> <task> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
         sys.exit(1)
