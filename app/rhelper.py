@@ -13,7 +13,37 @@ class Helper():
             self._redis.hset(self._fwk_name, constants.REDIS_FW_ID, value)
         except ConnectionError:
             print("ERROR exception error register")
+    '''
+        Check is some task is final
+    '''
+    def isFinalState(self,state):
+        return  (state == constants.TASK_FINISHED) \
+                or (state == constants.TASK_FAILED) \
+                or (state == constants.TASK_KILLED) \
+                or (state == constants.TASK_LOST) \
+                or (state == constants.TASK_ERROR)
 
+
+    '''
+        Check is some task is final
+    '''
+    def checkReconciliation(self,state):
+        return  (state == constants.TASK_LOST)
+    '''
+    Method than launches task reconciliation with a given set of tasks
+    '''
+    def reconcileUp(self,driver,tasks):
+        self.setReconcileStatus(True)
+        driver.suppressOffers()
+        driver.reconcileTasks(
+            map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
+                tasks))
+
+    def reconcileDown(self, driver):
+        # reviveoffers if reconciled
+        if (self.getNumberOfTasks() == 0 and self.getReconcileStatus()):
+            self._helper.setReconcileStatus(False)
+            driver.reviveOffers()
     '''
     set reconcile flag as true or false
     '''
@@ -30,7 +60,8 @@ class Helper():
         try:
             return eval(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
         except ConnectionError:
-            print("ERROR exception error setReconcileStatus")
+            print("ERROR exception error getReconcileStatus")
+
     '''
         filter all task ids depending on the task state
     '''

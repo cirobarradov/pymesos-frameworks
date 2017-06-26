@@ -9,6 +9,7 @@ from threading import Thread
 import redis
 import constants
 import rhelper
+from batchScheduler import BatchScheduler
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
@@ -40,12 +41,21 @@ class MinimalScheduler(Scheduler):
         self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
 
-    def isFinalState(self,state):
-        return  (state == constants.TASK_FINISHED) \
-                or (state == constants.TASK_FAILED) \
-                or (state == constants.TASK_KILLED) \
-                or (state == constants.TASK_LOST) \
-                or (state == constants.TASK_ERROR)
+
+
+    '''
+    Method than launches task reconciliation with a given set of tasks
+
+    def reconcileUp(self,driver,tasks):
+        logging.info("SUPRESS OFFERS")
+        self._helper.setReconcileStatus(True)
+        logging.info(self._helper.getReconcileStatus())
+        driver.suppressOffers()
+        driver.reconcileTasks(
+            map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
+                tasks))
+    '''
+
 
     '''
     Method that get all task from framework state and send them to be reconciled
@@ -54,13 +64,8 @@ class MinimalScheduler(Scheduler):
         logging.info("RECONCILE TASKS")
         if tasks is not None:
             #if there are tasks to reconcile, no offer will be acepted until finishing these tasks
-            logging.info("SUPRESS OFFERS")
-            self._helper.setReconcileStatus(True)
-            logging.info(self._helper.getReconcileStatus())
-            driver.suppressOffers()
-            driver.reconcileTasks(
-                map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
-                    tasks))
+            self._helper.reconcileUp(driver, tasks)
+
 
     def resourceOffers(self, driver, offers):
         logging.info("-----------resource offers ------------- ")
@@ -111,7 +116,7 @@ class MinimalScheduler(Scheduler):
                       update.task_id.value,
                       update.state)
         self._helper.addTaskToState(update)
-        if self.isFinalState(update.state) :
+        if self._helper.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
@@ -120,10 +125,8 @@ class MinimalScheduler(Scheduler):
             logging.info(" CHECK RECONCILE STATUS UPDATE")
             logging.info(self._helper.getReconcileStatus())
             logging.info(self._helper.getNumberOfTasks())
-            if (self._helper.getNumberOfTasks()==0 and self._helper.getReconcileStatus()):
-                self._helper.setReconcileStatus(False)
-                logging.info("REVIVE OFFERS")
-                driver.reviveOffers()
+            # reviveoffers if reconciled
+            self._helper.reconcileDown(driver)
 
 def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
@@ -143,6 +146,13 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
         use_addict=True,
     )
 
+    batch = MesosSchedulerDriver(
+        BatchScheduler(message, master, task_imp, max_tasks, connection, fwkName),
+        framework,
+        master,
+        use_addict=True,
+    )
+
     def signal_handler(signal, frame):
         logging.info("Closing redis connection, cleaning scheduler data and stopping MesosSchdulerDriver")
         logging.info("Stop driver")
@@ -151,8 +161,14 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     def run_driver_thread():
         driver.run()
 
+    def run_batch_thread():
+        batch.run()
+
     driver_thread = Thread(target=run_driver_thread, args=())
     driver_thread.start()
+
+    batch_thread= Thread(target=run_batch_thread, args=())
+    batch_thread.start()
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
