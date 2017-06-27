@@ -119,7 +119,7 @@ class MinimalScheduler(Scheduler):
                       update.state)
         self._helper.addTaskToState(update)
         logging.info("status update")
-        #logging.info(update)
+        logging.info(update.state)
         if self._helper.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
