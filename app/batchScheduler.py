@@ -14,7 +14,7 @@ from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class BatchScheduler(Scheduler):
