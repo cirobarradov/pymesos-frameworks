@@ -171,8 +171,8 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     driver_thread = Thread(target=run_driver_thread, args=())
     driver_thread.start()
 
-   # batch_thread= Thread(target=run_batch_thread, args=())
-   # batch_thread.start()
+    batch_thread= Thread(target=run_batch_thread, args=())
+    batch_thread.start()
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
