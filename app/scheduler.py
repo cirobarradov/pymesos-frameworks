@@ -119,7 +119,7 @@ class MinimalScheduler(Scheduler):
                       update.state)
         self._helper.addTaskToState(update)
         logging.info("status update")
-        logging.info(update)
+        #logging.info(update)
         if self._helper.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             self._helper.removeTaskFromState(update.task_id.value)
@@ -171,8 +171,8 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
     driver_thread = Thread(target=run_driver_thread, args=())
     driver_thread.start()
 
-    batch_thread= Thread(target=run_batch_thread, args=())
-    batch_thread.start()
+   # batch_thread= Thread(target=run_batch_thread, args=())
+   # batch_thread.start()
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
