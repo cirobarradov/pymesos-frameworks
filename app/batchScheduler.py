@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class BatchScheduler(Scheduler):
     def __init__(self, message, master, task_imp, max_tasks, connection, fwk_name):
-        logging.info("BATCH SCHEDULER")
+        logging.info("BATCH SCHEDULER---> INIT")
         self._redis = connection
         self._message = message
         self._master = master
@@ -27,11 +27,12 @@ class BatchScheduler(Scheduler):
         self._task_imp = task_imp
         self._helper=rhelper.Helper(connection,fwk_name)
         self._fwk_name=fwk_name
+        logging.info("INIT <---BATCH SCHEDULER")
 
     def statusUpdate(self, driver, update):
-        logging.info("HOLAHOLAHOLAHOLAHOLAHOLA")
+        logging.info("BATCH SCHEDULER---> STATUS UPDATE")
         time.sleep(constants.DELAY_BATCH_TIME)
-        logging.info("ADIOSSSSSSSSSSSSSSSSSSSS")
         if self._helper.checkReconciliation(update.state):
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
+        logging.info("STATUS UPDATE <---BATCH SCHEDULER")
