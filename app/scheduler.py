@@ -133,9 +133,8 @@ class MinimalScheduler(Scheduler):
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
 
-def main(key, master, task_imp, max_tasks, redis_server, fwkName):
+def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
-
     framework = Dict()
     framework.user = getpass.getuser()
     framework.name = fwkName
