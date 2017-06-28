@@ -19,14 +19,15 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class MinimalScheduler(Scheduler):
-    def __init__(self, message, master, task_imp, max_tasks, connection, fwk_name):
+    def __init__(self, key, master, task_imp, max_tasks, connection, fwk_name, redis_server):
         self._redis = connection
-        self._message = message
+        self._key = key
         self._master = master
         self._max_tasks = max_tasks
         self._task_imp = task_imp
-        self._helper=rhelper.Helper(connection,fwk_name)
-        self._fwk_name=fwk_name
+        self._helper = rhelper.Helper(connection,fwk_name)
+        self._fwk_name = fwk_name
+        self._redis_server = redis_server
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
@@ -96,7 +97,7 @@ class MinimalScheduler(Scheduler):
                     dict(name='mem', type='SCALAR', scalar={'value': constants.TASK_MEM}),
                 ]
                 task.command.shell = True
-                task.command.value = '/app/task.sh ' + self._message
+                task.command.value = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
                 # task.command.arguments = [self._message]
                 # logging.info(task)
                 logging.info(
@@ -132,7 +133,7 @@ class MinimalScheduler(Scheduler):
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
 
-def main(message, master, task_imp, max_tasks, redis_server, fwkName):
+def main(key, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
 
     framework = Dict()
@@ -144,14 +145,14 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
         framework.id = dict(value=connection.hget(framework.name, constants.REDIS_FW_ID))
 
     driver = MesosSchedulerDriver(
-        MinimalScheduler(message, master, task_imp, max_tasks, connection, fwkName),
+        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server),
         framework,
         master,
         use_addict=True,
     )
 
     batch = MesosSchedulerDriver(
-        BatchScheduler(message, master, task_imp, max_tasks, connection, fwkName),
+        BatchScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server),
         framework,
         master,
         use_addict=True,
@@ -190,7 +191,7 @@ def main(message, master, task_imp, max_tasks, redis_server, fwkName):
 
 if __name__ == '__main__':
     if len(sys.argv) != 7:
-        print("Usage: {} <message> <master> <task> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
+        print("Usage: {} <key> <master> <task> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
         sys.exit(1)
     else:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])

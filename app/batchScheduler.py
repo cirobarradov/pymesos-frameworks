@@ -18,15 +18,16 @@ logging.basicConfig(level=logging.INFO)
 
 
 class BatchScheduler(Scheduler):
-    def __init__(self, message, master, task_imp, max_tasks, connection, fwk_name):
+    def __init__(self, key, master, task_imp, max_tasks, connection, fwk_name, redis_server):
         logging.info("BATCH SCHEDULER---> INIT")
         self._redis = connection
-        self._message = message
+        self._key = key
         self._master = master
         self._max_tasks = max_tasks
         self._task_imp = task_imp
         self._helper=rhelper.Helper(connection,fwk_name)
         self._fwk_name=fwk_name
+        self._redis_server = redis_server
         logging.info("INIT <---BATCH SCHEDULER")
 
     def statusUpdate(self, driver, update):
