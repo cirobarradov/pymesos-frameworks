@@ -116,6 +116,9 @@ class MinimalScheduler(Scheduler):
 
     def statusUpdate(self, driver, update):
         logging.info("STATUS UPDATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")        
+        logging.info(update.state)        
+        logging.info("IS FINAL STATE???")        
+        logging.info(self._helper.isFinalState(update.state))
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
