@@ -66,8 +66,8 @@ class Helper():
     def getReconcileStatus(self):
         try:
             logging.info("get reconcile status")
-            logging.info(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
-            return eval(self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE))
+            rStatus = self._redis.hget(self._fwk_name, constants.REDIS_RECONCILE)
+            return rStatus is not None and eval(rStatus)
         except ConnectionError:
             logging.info("ERROR exception error getReconcileStatus")
 
