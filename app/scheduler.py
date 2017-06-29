@@ -115,10 +115,7 @@ class MinimalScheduler(Scheduler):
         return 0.0
 
     def statusUpdate(self, driver, update):
-        logging.info("STATUS UPDATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")        
-        logging.info(update.state)        
-        logging.info("IS FINAL STATE???")        
-        logging.info(self._helper.isFinalState(update.state))
+        logging.info(update.state)
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
@@ -169,14 +166,14 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     def run_driver_thread():
         driver.run()
 
-    #def run_batch_thread():
-    #    batch.run()
+    def run_batch_thread():
+        batch.run()
 
     driver_thread = Thread(target=run_driver_thread, args=())
     driver_thread.start()
 
-    #batch_thread= Thread(target=run_batch_thread, args=())
-    #batch_thread.start()
+    batch_thread= Thread(target=run_batch_thread, args=())
+    batch_thread.start()
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
