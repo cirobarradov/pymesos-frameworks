@@ -34,8 +34,9 @@ class MinimalScheduler(Scheduler):
         self.tasks = []
         self.job_finished = {}
         self._forcePullImage=forcePullImage
+        self.task_spec=jobs_def
         for job in jobs_def:
-            self.job_finished[job.get('name')] = 0
+            self.job_finished[job.get('name')] = job.get('num')
             for task_index in range(job.get('start',0), job.get('num')):
                 mesos_task_id = len(self.tasks)
                 self.tasks.append(
@@ -169,19 +170,18 @@ class MinimalScheduler(Scheduler):
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
             mesos_task_id = int(update.task_id.value)
             task=self.tasks[mesos_task_id]
-            self.job_finished[task.job_name]+= 1
+            self.job_finished[task.job_name] -= 1
+
+            if  (self.job_finished[task.job_name] == 0 ):
+                logging.info(task.job_name + " IS FINISHED")
+
+
             logging.info(" CHECK RECONCILE STATUS UPDATE")
             logging.info(self._helper.getReconcileStatus())
             logging.info(self._helper.getNumberOfTasks())
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
 
-    def finished(self):
-        logging.info("FINISHED!!!!!!!!!!!!!!!!!!!1")
-        logging.info(self.job_finished[job.name] >= job.num for job in self.task_spec)
-        return any(
-            self.job_finished[job.name] >= job.num for job in self.task_spec
-        )
 
 def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
