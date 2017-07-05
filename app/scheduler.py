@@ -135,7 +135,8 @@ class MinimalScheduler(Scheduler):
                 gpu_uuids = offered_gpus[:gpus]
                 offered_gpus = offered_gpus[gpus:]
                 task.offered = True
-                ti=task.to_task_info(offer, self._master, self._task_imp)
+                cmd = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
+                ti=task.to_task_info(offer, self._master, self._task_imp, cmd)
                 offered_tasks.append(ti)
                 logging.info(
                     "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \

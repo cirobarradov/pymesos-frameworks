@@ -48,6 +48,7 @@ class Task(object):
     def to_task_info(self, offer,
                      master_addr,
                      image ,
+                     cmd,
                      gpu_uuids=[],
                      gpu_resource_type=None,
                      force_pull_image=False):
@@ -110,11 +111,11 @@ class Task(object):
                 gpus.scalar.value = len(gpu_uuids)
 
         ti.command.shell = True
-        cmd = [
-            sys.executable, '-m', '%s.server' % __package__,
-            str(self.mesos_task_id), master_addr
-        ]
-        ti.command.value = ' '.join(cmd)
+        #cmd = [
+        #    sys.executable, '-m', '%s.server' % __package__,
+        #    str(self.mesos_task_id), master_addr
+        #]
+        ti.command.value = cmd
         ti.command.environment.variables = variables = []
         env = Dict()
         variables.append(env)
