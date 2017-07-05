@@ -14,12 +14,15 @@ from batchScheduler import BatchScheduler
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
 import logging
+import math
+from job import Job, Task
 
 logging.basicConfig(level=logging.DEBUG)
-
+FOREVER = 0xFFFFFFFF
 
 class MinimalScheduler(Scheduler):
-    def __init__(self, key, master, task_imp, max_tasks, connection, fwk_name, redis_server):
+    def __init__(self, key, master, task_imp, max_tasks, connection, fwk_name, redis_server,jobs_def, volumes={},
+                 forcePullImage=False):
         self._redis = connection
         self._key = key
         self._master = master
@@ -28,6 +31,25 @@ class MinimalScheduler(Scheduler):
         self._helper = rhelper.Helper(connection,fwk_name)
         self._fwk_name = fwk_name
         self._redis_server = redis_server
+        self.tasks = []
+        self.job_finished = {}
+        self._forcePullImage=forcePullImage
+        for job in jobs_def:
+            self.job_finished[job.get('name')] = 0
+            for task_index in range(job.get('start',0), job.get('num')):
+                mesos_task_id = len(self.tasks)
+                self.tasks.append(
+                    Task(
+                        mesos_task_id,
+                        job.get('name'),
+                        task_index,
+                        cpus=job.get('cpus',constants.TASK_CPU),
+                        mem=job.get('mem',constants.TASK_MEM),
+                        gpus=job.get('gpus',constants.TASK_GPU),
+                        cmd=job.get('cmd'),
+                        volumes=volumes
+                    )
+                )
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
@@ -75,38 +97,52 @@ class MinimalScheduler(Scheduler):
         logging.info(offers)
         filters = {'refuse_seconds': 5}
         for offer in offers:
-            try:
-                #checking if the framework can handle more tasks (looking the maximum number of allowed tasks)
-                self._helper.checkTask(self._max_tasks)
-                cpus = self.getResource(offer.resources, 'cpus')
-                mem = self.getResource(offer.resources, 'mem')
-                if cpus < constants.TASK_CPU or mem < constants.TASK_MEM:
-                    continue
-                task = Dict()
-                task_id = str(uuid.uuid4())
-                task.task_id.value = task_id
-                task.agent_id.value = offer.agent_id.value
-                task.name = 'task {}'.format(task_id)
-                task.container.type = 'DOCKER'
-                task.container.docker.image = self._task_imp
-                task.container.docker.network = 'HOST'
-                task.container.docker.force_pull_image = True
+            if all(task.offered for task in self.tasks):
+                driver.suppressOffers()
+                driver.declineOffer(offer.id, Dict(refuse_seconds=FOREVER))
+                continue
 
-                task.resources = [
-                    dict(name='cpus', type='SCALAR', scalar={'value': constants.TASK_CPU}),
-                    dict(name='mem', type='SCALAR', scalar={'value': constants.TASK_MEM}),
-                ]
-                task.command.shell = True
-                task.command.value = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
-                # task.command.arguments = [self._message]
-                # logging.info(task)
+            offered_cpus = offered_mem = 0.0
+            offered_gpus = []
+            offered_tasks = []
+            gpu_resource_type = None
+
+            for resource in offer.resources:
+                if resource.name == 'cpus':
+                    offered_cpus = resource.scalar.value
+                elif resource.name == 'mem':
+                    offered_mem = resource.scalar.value
+                elif resource.name == 'gpus':
+                    if resource.type == 'SET':
+                        offered_gpus = resource.set.item
+                    else:
+                        offered_gpus = list(range(int(resource.scalar.value)))
+
+                    gpu_resource_type = resource.type
+
+            for task in self.tasks:
+                if task.offered:
+                    continue
+
+                if not (task.cpus <= offered_cpus and
+                                task.mem <= offered_mem and
+                                task.gpus <= len(offered_gpus)):
+                    continue
+
+                offered_cpus -= task.cpus
+                offered_mem -= task.mem
+                gpus = int(math.ceil(task.gpus))
+                gpu_uuids = offered_gpus[:gpus]
+                offered_gpus = offered_gpus[gpus:]
+                task.offered = True
+                ti=task.to_task_info(offer, self._master, self._task_imp)
+                offered_tasks.append(ti)
                 logging.info(
-                    "launch task name:" + task.name + " resources: " + ",".join(str(x) for x in task.resources))
-                self._helper.addTaskToState(self._helper.initUpdateValue(task_id))
-                driver.launchTasks(offer.id, [task], filters)
-            except Exception:
-                # traceback.print_exc()
-                pass
+                    "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \
+                    ",".join(str(x) for x in ti.resources))
+                self._helper.addTaskToState(self._helper.initUpdateValue(task.mesos_task_id))
+            driver.launchTasks(offer.id, offered_tasks)
+
 
     def getResource(self, res, name):
         for r in res:
@@ -123,18 +159,28 @@ class MinimalScheduler(Scheduler):
         logging.info("status update")
         logging.info(update.state)
         if self._helper.isFinalState(update.state) :
-            if update.state == 'TASK_FAILED':
-                logging.error('Task failed: %s, %s', update.task_id.value, update.message)
             logging.info("take another task for framework" + driver.framework_id)
+            if update.state == 'TASK_FAILED':
+                logging.info(update.message)
             self._helper.removeTaskFromState(update.task_id.value)
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
+            mesos_task_id = int(update.task_id.value)
+            task=self.tasks[mesos_task_id]
+            self.job_finished[task.job_name]+= 1
             logging.info(" CHECK RECONCILE STATUS UPDATE")
             logging.info(self._helper.getReconcileStatus())
             logging.info(self._helper.getNumberOfTasks())
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
+
+    def finished(self):
+        logging.info("FINISHED!!!!!!!!!!!!!!!!!!!1")
+        logging.info(self.job_finished[job.name] >= job.num for job in self.task_spec)
+        return any(
+            self.job_finished[job.name] >= job.num for job in self.task_spec
+        )
 
 def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
@@ -146,8 +192,14 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
         logging.info("framework id already registered in redis")
         framework.id = dict(value=connection.hget(framework.name, constants.REDIS_FW_ID))
 
+    jobs_def = [
+        {
+            "name": "LinealRegressionAverage",
+            "num": 2
+        }
+    ]
     driver = MesosSchedulerDriver(
-        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server),
+        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server,jobs_def),
         framework,
         master,
         use_addict=True,
