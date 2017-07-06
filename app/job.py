@@ -19,7 +19,6 @@ class Job(object):
         self.start = start
 
 
-
 class Task(object):
     def __init__(self, mesos_task_id, job_name, task_index,
                  cpus=1.0, mem=1024.0, gpus=0, cmd=None, volumes={}):
@@ -33,20 +32,15 @@ class Task(object):
         self.cmd = cmd
         self.volumes = volumes
         self.offered = False
-
-        self.addr = None
-        self.connection = None
         self.initalized = False
 
     def __str__(self):
         return textwrap.dedent('''
         <Task
           mesos_task_id=%s
-          addr=%s
-        >''' % (self.mesos_task_id, self.addr))
+        >''' % (self.mesos_task_id))
 
     def to_task_info(self, offer,
-                     master_addr,
                      image ,
                      cmd,
                      gpu_uuids=[],

@@ -98,10 +98,10 @@ class MinimalScheduler(Scheduler):
         logging.info(offers)
         filters = {'refuse_seconds': 5}
         for offer in offers:
-            if all(task.offered for task in self.tasks):
-                driver.suppressOffers()
-                driver.declineOffer(offer.id, Dict(refuse_seconds=FOREVER))
-                continue
+            #if all(task.offered for task in self.tasks):
+            #    driver.suppressOffers()
+            #    driver.declineOffer(offer.id, Dict(refuse_seconds=FOREVER))
+            #    continue
 
             offered_cpus = offered_mem = 0.0
             offered_gpus = []
@@ -137,7 +137,7 @@ class MinimalScheduler(Scheduler):
                 offered_gpus = offered_gpus[gpus:]
                 task.offered = True
                 cmd = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
-                ti=task.to_task_info(offer, self._master, self._task_imp, cmd)
+                ti=task.to_task_info(offer, self._task_imp, cmd)
                 offered_tasks.append(ti)
                 logging.info(
                     "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \
@@ -163,18 +163,21 @@ class MinimalScheduler(Scheduler):
         if self._helper.isFinalState(update.state) :
             logging.info("take another task for framework" + driver.framework_id)
             if update.state == 'TASK_FAILED':
+                # print message if task fails
                 logging.info(update.message)
-            self._helper.removeTaskFromState(update.task_id.value)
+            elif update.state == 'TASK_FINISHED':
+                mesos_task_id = int(update.task_id.value)
+                task = self.tasks[mesos_task_id]
+                self.job_finished[task.job_name] -= 1
+
+                if (self.job_finished[task.job_name] == 0):
+                    logging.info(task.job_name + " IS FINISHED")
+
+                self._helper.removeTaskFromState(update.task_id.value)
+
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
-            mesos_task_id = int(update.task_id.value)
-            task=self.tasks[mesos_task_id]
-            self.job_finished[task.job_name] -= 1
-
-            if  (self.job_finished[task.job_name] == 0 ):
-                logging.info(task.job_name + " IS FINISHED")
-
 
             logging.info(" CHECK RECONCILE STATUS UPDATE")
             logging.info(self._helper.getReconcileStatus())
@@ -196,6 +199,10 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     jobs_def = [
         {
             "name": "LinealRegressionAverage",
+            "num": 3
+        },
+        {
+            "name": "LinealRegression",
             "num": 2
         }
     ]
