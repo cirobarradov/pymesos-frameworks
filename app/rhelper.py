@@ -13,20 +13,21 @@ class Helper():
         self._redis = redis
         self._fwk_name= fwk_name
 
-    def register(self, value):
+    def register(self, fwkid, master_info):
         try:
-            self._redis.hset(self._fwk_name, constants.REDIS_FW_ID, value)
+            self._redis.set(":".join([self._fwk_name, constants.REDIS_FW_ID]), fwkid)
+            self._redis.hmset(":".join([self._fwk_name, constants.REDIS_MASTER_INFO]), master_info)
         except ConnectionError:
             logging.info("ERROR exception error register")
+
+    def reregister(self, master_info):
+        self._redis.hmset(":".join([self._fwk_name, constants.REDIS_MASTER_INFO]), master_info)
+
     '''
         Check is some task is final
     '''
     def isFinalState(self,state):
-        return  (state == constants.TASK_FINISHED) \
-                or (state == constants.TASK_FAILED) \
-                or (state == constants.TASK_KILLED) \
-                or (state == constants.TASK_LOST) \
-                or (state == constants.TASK_ERROR)
+        return (state in constants.TERMINAL_STATES)
 
 
     '''
@@ -87,6 +88,14 @@ class Helper():
     def convertTaskIdToSchedulerFormat(self, task):
         return eval(str(constants.PROTO_TASK_ID) % task)
     # return eval("{'task_id':{'value':\'%s\'}} " % task)
+
+    def getTasksSet(self,setName):
+        tasks = self._redis.hget(self._fwk_name,setName)
+        if tasks == None:
+            res = set()
+        else:
+            res = eval(tasks)
+        return res
     '''
         get all task ids stored
     '''
@@ -99,13 +108,14 @@ class Helper():
         return res
 
     def initUpdateValue(self,taskId):
-        update=Dict()
-        update.task_id=Dict()
-        update.task_id.value=taskId
-        update.container_status=''
-        update.source=''
-        update.state='RUNNING'
-        update.agent_id=''
+        update = Dict()
+        update.executor_id = dict(value='')
+        update.uuid = ''
+        update.task_id = dict(value=taskId)
+        update.container_status = dict()
+        update.source = ''
+        update.state = 'TASK_STAGING'
+        update.agent_id = dict(value='')
         return update
     '''
     methods to generate update keys
@@ -120,16 +130,11 @@ class Helper():
         return taskId+constants.AGENT_KEY_TAG
 
     def getTaskState(self,update):
-        task=Dict()
-        #generate keys
-        containerKey=self.getContainerKey(update.task_id.value)
-        sourceKey=self.getSourceKey(update.task_id.value)
-        stateKey=self.getStateKey(update.task_id.value)
-        agentKey=self.getAgentKey(update.task_id.value)
-        task[containerKey] = update.container_status
-        task[sourceKey] = update.source
-        task[stateKey] = update.state
-        task[agentKey] = update.agent_id
+        task = Dict()
+        logging.info(update)
+        task[constants.SOURCE_KEY_TAG] = update.source
+        task[constants.STATE_KEY_TAG] = update.state
+        task[constants.AGENT_KEY_TAG] = update.agent_id['value']
         return task
 
     '''
@@ -140,13 +145,11 @@ class Helper():
     maxTasks (string) : maximum number of allowed tasks
     '''
     def checkTask(self,maxTasks):
-        logging.info("CHECK TASK: " + str(self.getNumberOfTasks())+ " "+maxTasks)
-        if self.getNumberOfTasks()>=int(maxTasks):
-            logging.info("Reached maximum number of tasks")
+        count = self.getNumberOfTasks()
+        if count >= int(maxTasks):
             raise Exception('maximum number of tasks')
         else:
-            logging.info(
-                "number tasks used = " + self.getNumberOfTasks().__str__() + " of " + maxTasks)
+            logging.info("number tasks used = " + str(count) + " of " + maxTasks)
 
 
     '''
@@ -163,7 +166,8 @@ class Helper():
     def addTaskToState(self,updateTask):
         try:
             task=self.getTaskState(updateTask)
-            self._redis.hmset(self._fwk_name, task)
+            self._redis.hmset(":".join([self._fwk_name, constants.REDIS_TASKS_SET, updateTask['task_id']['value']]),
+                              task)
         except ConnectionError:
             logging.info ("ERROR add task to state")
     '''
@@ -174,10 +178,11 @@ class Helper():
     '''
     def removeTaskFromState(self,taskId):
         try:
-            self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
-            self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
-            self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
-            self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
+            self._redis.delete(":".join([self._fwk_name, constants.REDIS_TASKS_SET, taskId]))
+            #self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
+            #self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
+            #self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
+            #self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
         except ConnectionError:
             logging.info ("ERROR remove Task From State")
 
@@ -186,6 +191,8 @@ class Helper():
     '''
     def getNumberOfTasks(self):
         try:
-            return len(self._redis.hkeys(self._fwk_name))//4
+            actualTasks = self._redis.scan(match=":".join([self._fwk_name, constants.REDIS_TASKS_SET, '*']))[1]
+            return len(actualTasks)
+            #return len(self._redis.hkeys(self._fwk_name))//4
         except ConnectionError:
             logging.info ("ERROR get Number Of Tasks")

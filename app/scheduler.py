@@ -9,7 +9,7 @@ from threading import Thread
 import redis
 import constants
 import rhelper
-from batchScheduler import BatchScheduler
+from threading import Thread, Timer
 
 from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
@@ -30,6 +30,9 @@ class MinimalScheduler(Scheduler):
         self._task_imp = task_imp
         self._helper = rhelper.Helper(connection,fwk_name)
         self._fwk_name = fwk_name
+        self.accept_offers = True
+        self._timers = {}
+
         self._redis_server = redis_server
         self.tasks = []
         self.job_finished = {}
@@ -55,33 +58,14 @@ class MinimalScheduler(Scheduler):
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
         logging.info("************registered     ")
-        logging.info(frameworkId)
-        self._helper.register( frameworkId['value'])
+        self._helper.register(frameworkId['value'], masterInfo)
         logging.info("<---")
 
     def reregistered(self, driver, masterInfo):
         logging.info("************re-registered  ")
-        logging.info(masterInfo)
-        # logging.info(self)
-        logging.info(driver)
+        self._helper.reregister(masterInfo)
         self.reconcileTasksFromState(driver, self._helper.getTasks())
         logging.info("<---")
-
-
-
-    '''
-    Method than launches task reconciliation with a given set of tasks
-
-    def reconcileUp(self,driver,tasks):
-        logging.info("SUPRESS OFFERS")
-        self._helper.setReconcileStatus(True)
-        logging.info(self._helper.getReconcileStatus())
-        driver.suppressOffers()
-        driver.reconcileTasks(
-            map(lambda task: self._helper.convertTaskIdToSchedulerFormat(task),
-                tasks))
-    '''
-
 
     '''
     Method that get all task from framework state and send them to be reconciled
@@ -94,7 +78,6 @@ class MinimalScheduler(Scheduler):
 
 
     def resourceOffers(self, driver, offers):
-        logging.info("-----------resource offers ------------- ")
         logging.info(offers)
         filters = {'refuse_seconds': 5}
         for offer in offers:
@@ -118,8 +101,9 @@ class MinimalScheduler(Scheduler):
                         offered_gpus = resource.set.item
                     else:
                         offered_gpus = list(range(int(resource.scalar.value)))
-
-                    gpu_resource_type = resource.type
+                    #    offered_cpus = self.getResource(offer.resources, 'cpus')
+                    #    offered_mem = self.getResource(offer.resources, 'mem')
+                    #gpu_resource_type = resource.type
 
             for task in self.tasks:
                 if task.offered:
@@ -142,26 +126,37 @@ class MinimalScheduler(Scheduler):
                 logging.info(
                     "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \
                     ",".join(str(x) for x in ti.resources))
+
                 self._helper.addTaskToState(self._helper.initUpdateValue(task.mesos_task_id))
-            driver.launchTasks(offer.id, offered_tasks)
+
+                self._timers[task.mesos_task_id] = Timer(10.0, self.validateRunning, kwargs={'taskid': task.mesos_task_id, 'driver': driver})
+                self._timers[task.mesos_task_id].start()
+
+            driver.launchTasks(offer.id, offered_tasks,filters)
 
 
-    def getResource(self, res, name):
-        for r in res:
-            if r.name == name:
-                return r.scalar.value
-        return 0.0
+    def validateRunning(self, **kwargs):
+        del self._timers[kwargs['taskid']]
+        kwargs['driver'].reconcileTasks([dict(task_id={'value':kwargs['taskid']})])
+
+    #def getResource(self, res, name):
+    #    for r in res:
+     #       if r.name == name:
+    #            return r.scalar.value
+     #   return 0.0
 
     def statusUpdate(self, driver, update):
-        logging.info(update.state)
         logging.debug('Status update TID %s %s',
                       update.task_id.value,
                       update.state)
-        self._helper.addTaskToState(update)
-        logging.info("status update")
-        logging.info(update.state)
+        if update.task_id.value in self._timers.keys():
+            self._timers[update.task_id.value].cancel()
+            del self._timers[update.task_id.value]
+
+        #self._helper.addTaskToState(update)
         if self._helper.isFinalState(update.state) :
-            logging.info("take another task for framework" + driver.framework_id)
+            logging.info("terminal state for task: " + update.task_id.value)
+
             if update.state == 'TASK_FAILED':
                 # print message if task fails
                 logging.info(update.message)
@@ -179,11 +174,14 @@ class MinimalScheduler(Scheduler):
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_tasks)
 
-            logging.info(" CHECK RECONCILE STATUS UPDATE")
-            logging.info(self._helper.getReconcileStatus())
-            logging.info(self._helper.getNumberOfTasks())
+            #logging.info(" CHECK RECONCILE STATUS UPDATE")
+            #logging.info(self._helper.getReconcileStatus())
+            #logging.info(self._helper.getNumberOfTasks())
+
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
+        else:
+            self._helper.addTaskToState(update)
 
 
 def main( key, master, task_imp, max_tasks, redis_server, fwkName):
@@ -192,9 +190,10 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     framework.user = getpass.getuser()
     framework.name = fwkName
     framework.hostname = socket.gethostname()
+
     if connection.hexists(framework.name, constants.REDIS_FW_ID):
         logging.info("framework id already registered in redis")
-        framework.id = dict(value=connection.hget(framework.name, constants.REDIS_FW_ID))
+        framework.id = dict(value=connection.get(":".join([framework.name, constants.REDIS_FW_ID])))
 
     jobs_def = [
         {
@@ -206,15 +205,12 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
             "num": 2
         }
     ]
-    driver = MesosSchedulerDriver(
-        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server,jobs_def),
-        framework,
-        master,
-        use_addict=True,
-    )
+    if connection.exists(":".join([framework.name, constants.REDIS_FW_ID])):
+        logging.info("framework id already registered in redis")
+        framework.id = dict(value=connection.get(":".join([framework.name, constants.REDIS_FW_ID])))
 
-    batch = MesosSchedulerDriver(
-        BatchScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server),
+    driver = MesosSchedulerDriver(
+        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server, jobs_def),
         framework,
         master,
         use_addict=True,
@@ -228,26 +224,19 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     def run_driver_thread():
         driver.run()
 
-    #def run_batch_thread():
-    #    batch.run()
-
     driver_thread = Thread(target=run_driver_thread, args=())
     driver_thread.start()
 
-    #batch_thread= Thread(target=run_batch_thread, args=())
-    #batch_thread.start()
-
     signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
 
     while driver_thread.is_alive():
         time.sleep(1)
 
-    logging.info("Borramos redis")
-    connection.delete(framework.name)
-
     logging.info("Disconnect from redis")
-    connection.disconnect()
+    keys = connection.scan(match=":".join([framework.name, '*']))[1]
+    logging.info(keys)
+    entries = connection.delete(keys)
+    logging.info(entries)
     connection = None
 
 
