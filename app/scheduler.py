@@ -16,22 +16,23 @@ from addict import Dict
 import logging
 import math
 from job import Job, Task
+from RedisQueue import RedisQueue
 
 logging.basicConfig(level=logging.DEBUG)
 FOREVER = 0xFFFFFFFF
 
 class MinimalScheduler(Scheduler):
-    def __init__(self, key, master, task_imp, max_tasks, connection, fwk_name, redis_server,jobs_def, volumes={},
+    def __init__(self, master, max_tasks, connection, fwk_name, redis_server,jobs_def, volumes={},
                  forcePullImage=False):
         self._redis = connection
-        self._key = key
         self._master = master
         self._max_tasks = max_tasks
-        self._task_imp = task_imp
         self._helper = rhelper.Helper(connection,fwk_name)
         self._fwk_name = fwk_name
         self.accept_offers = True
         self._timers = {}
+        #TODO cambiar cola por pubsub
+        self._queue=RedisQueue('jobs',host= redis_server, port= 6379, db= 0)
 
         self._redis_server = redis_server
         self.tasks = []
@@ -40,20 +41,7 @@ class MinimalScheduler(Scheduler):
         self.task_spec=jobs_def
         for job in jobs_def:
             self.job_finished[job.get('name')] = job.get('num')
-            for task_index in range(job.get('start',0), job.get('num')):
-                mesos_task_id = len(self.tasks)
-                self.tasks.append(
-                    Task(
-                        mesos_task_id,
-                        job.get('name'),
-                        task_index,
-                        cpus=job.get('cpus',constants.TASK_CPU),
-                        mem=job.get('mem',constants.TASK_MEM),
-                        gpus=job.get('gpus',constants.TASK_GPU),
-                        cmd=job.get('cmd'),
-                        volumes=volumes
-                    )
-                )
+            self.tasks = Job(job).tasks
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered
@@ -120,8 +108,9 @@ class MinimalScheduler(Scheduler):
                 gpu_uuids = offered_gpus[:gpus]
                 offered_gpus = offered_gpus[gpus:]
                 task.offered = True
-                cmd = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
-                ti=task.to_task_info(offer, self._task_imp, cmd)
+                #TODO parametrizar CMD
+                #cmd = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
+                ti=task.to_task_info(offer)
                 offered_tasks.append(ti)
                 logging.info(
                     "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \
@@ -166,7 +155,7 @@ class MinimalScheduler(Scheduler):
                 self.job_finished[task.job_name] -= 1
 
                 if (self.job_finished[task.job_name] == 0):
-                    logging.info(task.job_name + " IS FINISHED")
+                    logging.info(" ###############   " +task.job_name + " IS FINISHED #########################")
 
                 self._helper.removeTaskFromState(update.task_id.value)
 
@@ -184,7 +173,7 @@ class MinimalScheduler(Scheduler):
             self._helper.addTaskToState(update)
 
 
-def main( key, master, task_imp, max_tasks, redis_server, fwkName):
+def main( master, max_tasks, redis_server, fwkName):
     connection = redis.StrictRedis(host=redis_server, port=6379, db=0)
     framework = Dict()
     framework.user = getpass.getuser()
@@ -194,14 +183,19 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
     if connection.hexists(framework.name, constants.REDIS_FW_ID):
         logging.info("framework id already registered in redis")
         framework.id = dict(value=connection.get(":".join([framework.name, constants.REDIS_FW_ID])))
-
+    cmd='/app/task.sh ' + redis_server + " " + "task.py" +" " + fwkName
+    #TODO parametrizar jobs
     jobs_def = [
         {
             "name": "LinealRegressionAverage",
+            "image":"cirobarradov/executor-app",
+            "cmd" : cmd,
             "num": 3
         },
         {
             "name": "LinealRegression",
+            "image": "cirobarradov/executor-app",
+            "cmd": cmd,
             "num": 2
         }
     ]
@@ -210,7 +204,7 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
         framework.id = dict(value=connection.get(":".join([framework.name, constants.REDIS_FW_ID])))
 
     driver = MesosSchedulerDriver(
-        MinimalScheduler(key, master, task_imp, max_tasks, connection, fwkName, redis_server, jobs_def),
+        MinimalScheduler(master, max_tasks, connection, fwkName, redis_server, jobs_def),
         framework,
         master,
         use_addict=True,
@@ -241,8 +235,9 @@ def main( key, master, task_imp, max_tasks, redis_server, fwkName):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 7:
-        print("Usage: {} <key> <master> <task> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
+    #TODO Hablar con el equipo de gaspar para ver como gestionan desde spark el repo comun de procesos (librerias, dependencias, etc.)
+    if len(sys.argv) != 5:
+        print("Usage: {} <master> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
         sys.exit(1)
     else:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
