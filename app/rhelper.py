@@ -12,6 +12,8 @@ class Helper():
     def __init__(self,redis,fwk_name):
         self._redis = redis
         self._fwk_name= fwk_name
+        self._pubsub= redis.pubsub()
+        self._pubsub.subscribe("jobs")
 
     def register(self, fwkid, master_info):
         try:
@@ -196,3 +198,16 @@ class Helper():
             #return len(self._redis.hkeys(self._fwk_name))//4
         except ConnectionError:
             logging.info ("ERROR get Number Of Tasks")
+
+    '''
+        Publish/subscribe messages
+    '''
+    def getPubSubJob(self):
+        try:
+            m = self._pubsub.get_message()
+            if m is not None and m.get("type")=="message":
+                return m.get("data")
+            else:
+                return None
+        except ConnectionError:
+            logging.info ("ERROR get pubsub Jobs")

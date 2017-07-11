@@ -1,11 +1,9 @@
 from __future__ import print_function
 import sys
-import uuid
 import time
 import socket
 import signal
 import getpass
-from threading import Thread
 import redis
 import constants
 import rhelper
@@ -15,8 +13,7 @@ from pymesos import MesosSchedulerDriver, Scheduler, encode_data
 from addict import Dict
 import logging
 import math
-from job import Job, Task
-from RedisQueue import RedisQueue
+from job import Job
 
 logging.basicConfig(level=logging.DEBUG)
 FOREVER = 0xFFFFFFFF
@@ -31,8 +28,6 @@ class MinimalScheduler(Scheduler):
         self._fwk_name = fwk_name
         self.accept_offers = True
         self._timers = {}
-        #TODO cambiar cola por pubsub
-        self._queue=RedisQueue('jobs',host= redis_server, port= 6379, db= 0)
 
         self._redis_server = redis_server
         self.tasks = []
@@ -40,6 +35,10 @@ class MinimalScheduler(Scheduler):
         self._forcePullImage=forcePullImage
         self.task_spec=jobs_def
         for job in jobs_def:
+            self.addJob(job)
+
+    def addJob(self, job):
+        if (job is not None):
             self.job_finished[job.get('name')] = job.get('num')
             self.tasks.extend(Job(job).tasks)
 
@@ -68,6 +67,9 @@ class MinimalScheduler(Scheduler):
     def resourceOffers(self, driver, offers):
         logging.info(offers)
         filters = {'refuse_seconds': 5}
+
+        self.addJob(self._helper.getPubSubJob())
+
         for offer in offers:
             #if all(task.offered for task in self.tasks):
             #    driver.suppressOffers()
@@ -179,7 +181,6 @@ def main( master, max_tasks, redis_server, fwkName):
     framework.user = getpass.getuser()
     framework.name = fwkName
     framework.hostname = socket.gethostname()
-
     if connection.hexists(framework.name, constants.REDIS_FW_ID):
         logging.info("framework id already registered in redis")
         framework.id = dict(value=connection.get(":".join([framework.name, constants.REDIS_FW_ID])))
