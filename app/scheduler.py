@@ -39,8 +39,9 @@ class MinimalScheduler(Scheduler):
 
     def addJob(self, job):
         if (job is not None):
-            self.job_finished[job.get('name')] = job.get('num')
-            self.tasks.extend(Job(job).tasks)
+            j=Job(job)
+            self.job_finished[j.name] = j.num
+            self.tasks.extend(j.tasks)
 
     def registered(self, driver, frameworkId, masterInfo):
         # set max tasks to framework registered

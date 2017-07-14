@@ -2,6 +2,7 @@ from addict import Dict
 
 import constants
 from redis.connection import ConnectionError
+import json
 
 import logging
 
@@ -206,7 +207,8 @@ class Helper():
         try:
             m = self._pubsub.get_message()
             if m is not None and m.get("type")=="message":
-                return m.get("data")
+                return eval(m.get("data"))
+                #return json.loads(m.get("data"))
             else:
                 return None
         except ConnectionError:

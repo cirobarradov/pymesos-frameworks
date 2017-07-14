@@ -3,15 +3,9 @@ from addict import Dict
 from six import iteritems
 import logging
 import sys
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 class Job(object):
-    def __init__(self, jobs):
-        for job in jobs_def:
-            j = Job(job)
-        self.initFromDict(dict.get("name"),dict.get("num"),dict.get("tasks"),dict.get("cmd",None),dict.get("cpus",1.0),
-        dict.get("mem",1024.0),dict.get("gpus",0),dict.get("start",0),dict.get("image", None),dict.get("volumes",{}))
-
     def __init__(self, dict):
         self.initFromDict(dict.get("name"),dict.get("num"),dict.get("tasks"),dict.get("cmd",None),dict.get("cpus",1.0),
         dict.get("mem",1024.0),dict.get("gpus",0),dict.get("start",0),dict.get("image", None),dict.get("volumes",{}))
@@ -20,28 +14,36 @@ class Job(object):
  #                gpus=0, start=0, image=None, volumes={}):
     def initFromDict(self, name, num, tasks, cmd, cpus, mem,
                      gpus, start, image, volumes):
-        self.name = name
-        self.num = num
-        self.cpus = cpus
-        self.gpus = gpus
-        self.mem = mem
-        self.cmd = cmd
-        self.start = start
-        self.tasks=[]
+        try:
+            self.name = name
+            self.num = int(num)
+            self.cpus = cpus
+            self.gpus = gpus
+            self.mem = mem
+            self.cmd = cmd
+            self.start = start
+            self.tasks=[]
+            self.image=image
+            self.volumes=volumes
+            self.addTasks(tasks)
+        except ValueError, e:
+            logging.error(e.message)
+
+    def addTasks(self,tasks):
         if tasks is None:
             for task_index in range(self.start, self.num):
                 mesos_task_id = len(self.tasks)
                 self.tasks.append(
                     Task(
-                        mesos_task_id,
-                        self.name,
+                        int(mesos_task_id),
+                        str(self.name),
                         task_index,
                         cmd=self.cmd,
                         cpus=self.cpus,
                         mem=self.mem,
                         gpus=self.gpus,
-                        image=image,
-                        volumes= volumes
+                        image=self.image,
+                        volumes= self.volumes
                     )
                 )
         else:
@@ -49,15 +51,15 @@ class Job(object):
             for index, task in enumerate(tasks):
                 self.tasks.append(
                     Task(
-                        task.get('mesos_task_id',index),
-                        self.name,
-                        task.get('task_index', index),
-                        task.get('cmd', self.cmd),
-                        task.get('cpus', self.cpus),
-                        task.get('mem', self.mem),
-                        task.get('gpus', self.gpus),
-                        task.get('image',image),
-                        task.get('volumes', volumes),
+                        int(task.get('mesos_task_id',index)),
+                        str(self.name),
+                        int(task.get('task_index', index)),
+                        str(task.get('cmd', self.cmd)),
+                        float(task.get('cpus', float(self.cpus))),
+                        float(task.get('mem', float(self.mem))),
+                        float(task.get('gpus', float(self.gpus))),
+                        str(task.get('image',str(self.image))),
+                        task.get('volumes', self.volumes),
                     )
                 )
 
@@ -65,17 +67,20 @@ class Job(object):
 class Task(object):
     def __init__(self, mesos_task_id, job_name, task_index, cmd=None,
                  cpus=1.0, mem=1024.0, gpus=0, image=None, volumes={}):
-        self.mesos_task_id = str(mesos_task_id)
-        self.job_name = job_name
-        self.task_index = task_index
-        self.image=image
-        self.cpus = cpus
-        self.gpus = gpus
-        self.mem = mem
-        self.cmd = cmd
-        self.volumes = volumes
-        self.offered = False
-        self.initalized = False
+        try:
+            self.mesos_task_id = str(mesos_task_id)
+            self.job_name = job_name
+            self.task_index = task_index
+            self.image=image
+            self.cpus = cpus
+            self.gpus = gpus
+            self.mem = mem
+            self.cmd = str(cmd)
+            self.volumes = volumes
+            self.offered = False
+            self.initalized = False
+        except ValueError, e:
+            logging.error(e.message)
 
     # cmd = '/app/task.sh ' + self._redis_server + " " + "task.py" +" " + self._key
     def __str__(self):
@@ -165,7 +170,7 @@ if __name__ == '__main__':
             "name": "LinealRegressionAverage",
             "num": 3,
             "tasks": [{"mesos_task_id": 2, "job_name": "job", "task_index": 1,"cmd":"asdfasfasfdasdf"},
-                      {"mesos_task_id": 0, "job_name": "job2", "task_index": 1, "cpus": 5,"image":"cirobarradov/fasdfasdf"}]
+                      {"mesos_task_id": 0, "job_name": "job2", "task_index": 1, "cpus": "56","image":"cirobarradov/fasdfasdf"}]
         },
         {
             "name": "LinealRegression",
