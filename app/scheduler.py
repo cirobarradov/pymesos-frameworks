@@ -237,7 +237,6 @@ def main( master, max_tasks, redis_server, fwkName):
 
 
 if __name__ == '__main__':
-    #TODO Hablar con el equipo de gaspar para ver como gestionan desde spark el repo comun de procesos (librerias, dependencias, etc.)
     if len(sys.argv) != 5:
         print("Usage: {} <master> <max_tasks> <redis_server> <fwkName>".format(sys.argv[0]))
         sys.exit(1)
