@@ -38,8 +38,9 @@ class RunningCounter extends Counter
 {
 }
 custom_mark12
-
-
+</details>
+<details> 
+<summary></summary>
 custom_mark12
 /**
 *Structural Things
