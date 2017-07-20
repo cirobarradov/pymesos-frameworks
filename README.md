@@ -34,6 +34,38 @@ class Counter extends Structural {
 *@opt all
 *@note Active Class
 */
-class RunningCounter extends Counter{}
+class RunningCounter extends Counter
+{
+}
+custom_mark12
+
+
+custom_mark12
+/**
+*Structural Things
+*@opt commentname
+*@note Notes can
+*be extended to
+*span multiple lines
+*/
+class Structural{}
+
+/**
+*@opt all
+*@note Class
+*/
+class Counter extends Structural {
+        static public int counter;
+        public int getCounter();
+}
+
+/**
+*@opt shape activeclass
+*@opt all
+*@note Active Class
+*/
+class RunningCounter extends Counter
+{
+}
 custom_mark12
 </details>
