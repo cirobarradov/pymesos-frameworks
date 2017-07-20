@@ -67,7 +67,7 @@ class Counter extends Structural {
 *@opt all
 *@note Active Class
 */
-class RunningCounter extends Counter
+class MinimalScheduler extends Scheduler
 {
 }
 custom_mark12
