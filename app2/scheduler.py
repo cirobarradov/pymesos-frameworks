@@ -5,6 +5,7 @@ import logging
 import signal
 import socket
 import sys
+import os
 import json
 import time
 from threading import Thread, Timer
@@ -163,7 +164,10 @@ def main( master, max_jobs, redis_server, fwkName):
         framework.id = dict(value=schedHelper.getFwkName())
 
     cmd = '/app/task.sh ' + redis_server + " " + "task.py" + " " + fwkName
-    jobs_def = json.loads(open('config/jobconfiguration.json').read())
+    script_dir = os.path.dirname(__file__)
+    file_path = os.path.join(script_dir, 'config/jobconfiguration.json')
+    jobs_def = json.loads(open(file_path).read())
+    #jobs_def = json.loads(open('config/jobconfiguration.json').read())
     # TODO parametrizar jobs
 
     if schedHelper.existsFwk():
