@@ -123,7 +123,7 @@ class SchedHelper():
     '''
     def addTaskToState(self,updateTask):
         task=StatusTask.getTaskState(updateTask)
-        self._redisDao.hmset(":".join([self._fwk_name, constants.REDIS_TASKS_SET, updateTask['task_id']['value']]),
+        self._redisDao.hmset(":".join([self._fwk_name, constants.REDIS_TASKS_SET, updateTask.task_id['value']]),
                           task)
     '''
     Method that removes a task from framework (key) state
