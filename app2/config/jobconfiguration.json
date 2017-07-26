@@ -1,0 +1,12 @@
+[
+  {
+      "name": "LinealRegressionAverage",
+      "image": "cirobarradov/executor-app",
+      "num": 3
+  },
+  {
+      "name": "LinealRegression",
+      "image": "cirobarradov/executor-app",
+      "num": 2
+  }
+]

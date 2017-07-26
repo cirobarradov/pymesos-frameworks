@@ -5,6 +5,7 @@ import logging
 import signal
 import socket
 import sys
+import json
 import time
 from threading import Thread, Timer
 
@@ -19,7 +20,7 @@ from schedHelper import SchedHelper
 logging.basicConfig(level=logging.DEBUG)
 
 class TechlabScheduler(Scheduler):
-    def __init__(self, max_jobs, helper, jobs_def):
+    def __init__(self, max_jobs, helper, (jobs_def,cmd)):
         self._max_jobs = max_jobs
         self._helper = helper
         self.accept_offers = True
@@ -28,13 +29,13 @@ class TechlabScheduler(Scheduler):
         self._job_finished = {}
         self._task_spec=jobs_def
         for job in jobs_def:
-            self._addJob(job)
+            self._addJob(job,cmd)
 
     #PRIVATE METHODS
 
-    def _addJob(self, job):
+    def _addJob(self, job, cmd=None):
         if (job is not None):
-            j=Job(job)
+            j=Job(job,cmd)
             self._job_finished[j.name] = j.num
             self._tasks.extend(j.tasks)
 
@@ -58,6 +59,21 @@ class TechlabScheduler(Scheduler):
         self._helper.reconcileTasksFromState(driver, self._helper.getTasks())
 
 
+    '''
+      Invoked when resources have been offered to this framework. A
+      single offer will only contain resources from a single slave.
+      Resources associated with an offer will not be re-offered to
+      _this_ framework until either (a) this framework has rejected
+      those resources (see SchedulerDriver::launchTasks) or (b) those
+      resources have been rescinded (see Scheduler::offerRescinded).
+      Note that resources may be concurrently offered to more than one
+      framework at a time (depending on the allocator being used). In
+      that case, the first framework to launch tasks using those
+      resources will be able to use them while the other frameworks
+      will have those resources rescinded (or if a framework has
+      already launched tasks with those resources then those tasks will
+      fail with a TASK_LOST status and a message saying as much).
+    '''
     def resourceOffers(self, driver, offers):
         logging.info(offers)
         filters = {'refuse_seconds': 5}
@@ -68,8 +84,6 @@ class TechlabScheduler(Scheduler):
             try:
                 offerResource=ResourceOffer(offer)
                 #self._helper.checkTask(self._max_jobs)
-
-
                 for task in self._tasks:
                     if task.offered:
                         continue
@@ -93,6 +107,19 @@ class TechlabScheduler(Scheduler):
                 logging.info(str(e))
                 pass
 
+    '''
+     Invoked when the status of a task has changed (e.g., a slave is
+     lost and so the task is lost, a task finishes and an executor
+     sends a status update saying so, etc). If implicit
+     acknowledgements are being used, then returning from this
+     callback _acknowledges_ receipt of this status update! If for
+     whatever reason the scheduler aborts during this callback (or
+     the process exits) another status update will be delivered (note,
+     however, that this is currently not true if the slave sending the
+     status update is lost/fails during that time). If explicit
+     acknowledgements are in use, the scheduler must acknowledge this
+     status on the driver.
+    '''
     def statusUpdate(self, driver, update):
         sTask=StatusTask(update)
         sTask.printStatus()
@@ -136,50 +163,15 @@ def main( master, max_jobs, redis_server, fwkName):
         framework.id = dict(value=schedHelper.getFwkName())
 
     cmd = '/app/task.sh ' + redis_server + " " + "task.py" + " " + fwkName
-
+    jobs_def = json.loads(open('config/jobconfiguration.json').read())
     # TODO parametrizar jobs
-    jobs_def = [
-        {
-            "name": "LinealRegressionAverage",
-            "image": "cirobarradov/executor-app",
-            "cmd": cmd,
-            "num": 3
-        },
-        {
-            "name": "LinealRegression",
-            "image": "cirobarradov/executor-app",
-            "cmd": cmd,
-            "num": 2
-        }
-        ,
-        {
-            "name": "LinealRegression2",
-            "image": "cirobarradov/executor-app",
-            "cmd": cmd,
-            "num": 2
-        }
-        ,
-        {
-            "name": "LinealRegression3",
-            "image": "cirobarradov/executor-app",
-            "cmd": cmd,
-            "num": 2
-        }
-        ,
-        {
-            "name": "LinealRegression4",
-            "image": "cirobarradov/executor-app",
-            "cmd": cmd,
-            "num": 2
-        }
-    ]
 
     if schedHelper.existsFwk():
         logging.info("framework id already registered in redis")
         framework.id = dict(value=schedHelper.getFwkName())
 
     driver = MesosSchedulerDriver(
-        TechlabScheduler(max_jobs, schedHelper, jobs_def),
+        TechlabScheduler(max_jobs, schedHelper, (jobs_def,cmd)),
         framework,
         master,
         use_addict=True,
