@@ -5,7 +5,7 @@ import constants
 logging.basicConfig(level=logging.DEBUG)
 
 class StatusTask(object):
-    def __init__(self, statusDict):
+    def __init__(self, statusDict=Dict()):
         self.task_id=statusDict.task_id.value
         self.state=statusDict.state
         self.executor_id=statusDict.executor_id.value
@@ -31,14 +31,9 @@ class StatusTask(object):
     '''
     @staticmethod
     def initTask(taskId):
-        status = Dict()
-        status.executor_id = dict(value='')
-        status.uuid = ''
-        status.task_id = dict(value=taskId)
-        status.container_status = dict()
-        status.source = ''
-        status.state = constants.TASK_STAGING
-        status.agent_id = dict(value='')
+        status=StatusTask()
+        status.state=constants.TASK_STAGING
+        status.task_id['value']=taskId
         return status
     '''
     status dict
@@ -54,3 +49,10 @@ class StatusTask(object):
 
     def printStatus(self):
         logging.debug('Status update TID %s %s', self.task_id, self.state)
+
+
+if __name__ == '__main__':
+    status = '{\'executor_id\': {}, \'uuid\': {}, \'task_id\': u\'2\', \'timestamp\': 1501063985.45066, \'state\': u\'TASK_STAGING\', \'container_status\': {}, \'source\': u\'SOURCE_MASTER\', \'reason\': u\'REASON_RECONCILIATION\', \'agent_id\': u\'5049f5bc-5630-4453-b14a-e39ed428f9b1-S4\', \'message\': u\'Reconciliation: Latest task state\'}'
+    status = eval(status)
+    sTask= StatusTask().initTask(2)
+    StatusTask.getTaskState(sTask)
