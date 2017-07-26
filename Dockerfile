@@ -9,6 +9,7 @@ MAINTAINER rbravo@datiobd.com
 ADD pymesos/ /pymesos/
 # copy the contents of the `app/` folder into the container at build time
 ADD app/ /app/
+ADD app2/ /app2/
 
 #run commands:
 RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-pip libzookeeper-mt-dev \ 
@@ -35,6 +36,7 @@ RUN apt-get update && apt-get install -y python3 python-dev python3-dev python-p
     && rm -rf /usr/share/doc/*
 
 RUN chmod a+x /app/scheduler.sh
+RUN chmod a+x /app2/scheduler.sh
 
 ENV MASTER 172.16.48.181
 ENV DOCKER_TASK cirobarradov/executor-app
