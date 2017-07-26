@@ -125,22 +125,22 @@ class TechlabScheduler(Scheduler):
         sTask=StatusTask(update)
         sTask.printStatus()
 
-        if sTask.task_id in self._timers.keys():
-            self._timers[sTask.task_id].cancel()
-            del self._timers[sTask.task_id]
+        if sTask.getTaskId() in self._timers.keys():
+            self._timers[sTask.getTaskId()].cancel()
+            del self._timers[sTask.getTaskId()]
 
         if sTask.isFinalState():
             logging.info("terminal state for task: " + sTask.state)
             if sTask.isTaskFailed():
                 logging.info(sTask.message)
             elif sTask.isTaskFinished():
-                mesos_task_id = int(sTask.task_id)
+                mesos_task_id = int(sTask.getTaskId())
                 task = self._tasks[mesos_task_id]
                 self._job_finished[task.job_name] -= 1
 
                 if (self._job_finished[task.job_name] == 0):
                     logging.info(" ###############   " + task.job_name + " IS FINISHED #########################")
-                self._helper.removeTaskFromState(sTask.task_id)
+                self._helper.removeTaskFromState(sTask.getTaskId())
             logging.info(
                 "tasks used = " + str(
                     self._helper.getNumberOfTasks()) + " of " + self._max_jobs)
