@@ -41,7 +41,7 @@ class StatusTask(object):
     @staticmethod
     def getTaskState(status):
         task = Dict()
-        logging.info(status)
+        logging.info(vars(status))
         task[constants.SOURCE_KEY_TAG] = status.source
         task[constants.STATE_KEY_TAG] = status.state
         task[constants.AGENT_KEY_TAG] = status.agent_id['value']
