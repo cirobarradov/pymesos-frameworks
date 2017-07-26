@@ -147,7 +147,7 @@ class TechlabScheduler(Scheduler):
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
         else:
-            self._helper.addTaskToState(vars(sTask))
+            self._helper.addTaskToState(sTask)
 
 
 def main( master, max_jobs, redis_server, fwkName):
