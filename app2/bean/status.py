@@ -37,12 +37,42 @@ class StatusTask(object):
     return dict
     '''
     @staticmethod
-    def initTask(taskId):
-        status=StatusTask()
-        status.state=constants.TASK_STAGING
-        status.task_id=Dict()
-        status.task_id['value']=taskId
+    def initTask(taskId, fwk_name):
+        statusDict=Dict()
+        statusDict.reason='task asked by framework'
+        statusDict.source='framework'
+        statusDict.stage=constants.TASK_STAGING
+        statusDict.task_id = dict(value=taskId)
+        statusDict.executor_id = dict(value=fwk_name)
+
+        status= StatusTask(statusDict)
+
         return status
+
+    # def initUpdateValue(self, taskId):
+    #     status = Dict()
+    #     status.executor_id = dict(value=self._fwk_name)
+    #     status.uuid = ''
+    #     status.task_id = dict(value=taskId)
+    #     status.container_status = dict()
+    #     status.source = 'framework'
+    #     status.reason = 'task asked by framework'
+    #     status.state = 'TASK_STAGING'
+    #
+    #     status.agent_id = dict(value='')
+    #     return status
+
+
+    # def initTask(taskId):
+    #     status = Dict()
+    #     status.executor_id = dict(value='')
+    #     status.uuid = ''
+    #     status.task_id = dict(value=taskId)
+    #     status.container_status = dict()
+    #     status.source = ''
+    #     status.state = constants.TASK_STAGING
+    #     status.agent_id = dict(value='')
+    #     return status
     '''
     status dict
     '''
@@ -58,11 +88,11 @@ class StatusTask(object):
     def printStatus(self):
         logging.debug('Status update TID %s %s', self.task_id['value'], self.state)
 
-
-if __name__ == '__main__':
-    status = '{\'executor_id\': {}, \'uuid\': {}, \'task_id\': u\'2\', \'timestamp\': 1501063985.45066, \'state\': u\'TASK_STAGING\', \'container_status\': {}, \'source\': u\'SOURCE_MASTER\', \'reason\': u\'REASON_RECONCILIATION\', \'agent_id\': u\'5049f5bc-5630-4453-b14a-e39ed428f9b1-S4\', \'message\': u\'Reconciliation: Latest task state\'}'
-    status = eval(status)
-    sTask= StatusTask().initTask(2)
-    agent=sTask.agent_id['value']
-    print(agent)
-    StatusTask.getTaskState(sTask)
+#
+# if __name__ == '__main__':
+#     status = '{\'executor_id\': {}, \'uuid\': {}, \'task_id\': u\'2\', \'timestamp\': 1501063985.45066, \'state\': u\'TASK_STAGING\', \'container_status\': {}, \'source\': u\'SOURCE_MASTER\', \'reason\': u\'REASON_RECONCILIATION\', \'agent_id\': u\'5049f5bc-5630-4453-b14a-e39ed428f9b1-S4\', \'message\': u\'Reconciliation: Latest task state\'}'
+#     status = eval(status)
+#     sTask= StatusTask().initTask(2)
+#     agent=sTask.agent_id['value']
+#     print(agent)
+#     StatusTask.getTaskState(sTask)
