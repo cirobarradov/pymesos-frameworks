@@ -83,6 +83,8 @@ class TechlabScheduler(Scheduler):
         #self._addJob(self._helper.getPubSubJob())
         for offer in offers:
             try:
+                #check number of jobs
+                self._helper.checkTask(self._max_jobs)
                 offerResource=ResourceOffer(offer)
                 #self._helper.checkTask(self._max_jobs)
                 for task in self._tasks:
@@ -97,7 +99,7 @@ class TechlabScheduler(Scheduler):
                         "launch task name:" + task.job_name +"/" + task.mesos_task_id + " resources: " + \
                         ",".join(str(x) for x in ti.resources))
 
-                    self._helper.addTaskToState(StatusTask.initTask(task.mesos_task_id))
+                    self._helper.addTaskToState(StatusTask.initTask(task.mesos_task_id, self._helper.fwk_name),task.job_name)
 
                     self._timers[task.mesos_task_id] = Timer(10.0, self._validateRunning,
                                                              kwargs={'taskid': task.mesos_task_id, 'driver': driver})
@@ -106,6 +108,7 @@ class TechlabScheduler(Scheduler):
                 driver.launchTasks(offer.id, offerResource.offered_tasks,filters)
             except Exception, e:
                 logging.info(str(e))
+                driver.declineOffer(offer.id, filters)
                 pass
 
     '''
@@ -136,18 +139,21 @@ class TechlabScheduler(Scheduler):
             elif sTask.isTaskFinished():
                 mesos_task_id = int(sTask.getTaskId())
                 task = self._tasks[mesos_task_id]
+
                 self._job_finished[task.job_name] -= 1
 
                 if (self._job_finished[task.job_name] == 0):
                     logging.info(" ###############   " + task.job_name + " IS FINISHED #########################")
-                self._helper.removeTaskFromState(sTask.getTaskId())
+                self._helper.removeTaskFromState(task)
             logging.info(
                 "tasks used = " + str(
-                    self._helper.getNumberOfTasks()) + " of " + self._max_jobs)
+                    self._helper.getNumberOfJobs()) + " of " + self._max_jobs)
             # reviveoffers if reconciled
             self._helper.reconcileDown(driver)
         else:
-            self._helper.addTaskToState(sTask)
+            mesos_task_id = int(sTask.getTaskId())
+            task = self._tasks[mesos_task_id]
+            self._helper.addTaskToState(sTask, task.job_name)
 
 
 def main( master, max_jobs, redis_server, fwkName):

@@ -16,6 +16,7 @@ AGENT_KEY_TAG = ':agent'
 
 #CONSTANTS MINIMAL SCHEDULER
 REDIS_TASKS_SET = "tasks"
+REDIS_JOBS_SET= "jobs"
 REDIS_FW_ID='fwk_id'
 REDIS_RECONCILE='reconcile'
 REDIS_MASTER_INFO = 'master_info'

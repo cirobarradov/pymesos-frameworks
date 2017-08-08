@@ -12,16 +12,16 @@ class SchedHelper():
 
     def __init__(self,redis_server,fwk_name):
         self._redisDao = RedisDao(redis_server)
-        self._fwk_name= fwk_name
+        self.fwk_name= fwk_name
         #self._pubsub= redis.pubsub()
         #self._pubsub.subscribe("jobs")
 
     def register(self, fwkid, master_info):
-        self._redisDao.set(":".join([self._fwk_name, constants.REDIS_FW_ID]), fwkid)
-        self._redisDao.hmset(":".join([self._fwk_name, constants.REDIS_MASTER_INFO]), master_info)
+        self._redisDao.set(":".join([self.fwk_name, constants.REDIS_FW_ID]), fwkid)
+        self._redisDao.hmset(":".join([self.fwk_name, constants.REDIS_MASTER_INFO]), master_info)
 
     def reregister(self, master_info):
-        self._redisDao.hmset(":".join([self._fwk_name, constants.REDIS_MASTER_INFO]), master_info)
+        self._redisDao.hmset(":".join([self.fwk_name, constants.REDIS_MASTER_INFO]), master_info)
 
     '''
     Method than launches task reconciliation with a given set of tasks
@@ -46,12 +46,12 @@ class SchedHelper():
     def setReconcileStatus(self, reconcile):
         logging.info("set reconcile status")
         logging.info(reconcile)
-        self._redisDao.hset(self._fwk_name, constants.REDIS_RECONCILE, reconcile)
+        self._redisDao.hset(self.fwk_name, constants.REDIS_RECONCILE, reconcile)
         return reconcile
 
     def getReconcileStatus(self):
         logging.info("get reconcile status")
-        rStatus = self._redisDao.hget(self._fwk_name, constants.REDIS_RECONCILE)
+        rStatus = self._redisDao.hget(self.fwk_name, constants.REDIS_RECONCILE)
         return rStatus is not None and eval(rStatus)
     '''
     Method that get all task from framework state and send them to be reconciled
@@ -69,8 +69,8 @@ class SchedHelper():
     def filterTasks(self,state):
         res=map(lambda x: x.replace(constants.STATE_KEY_TAG,constants.BLANK),
                 filter(lambda x: (constants.STATE_KEY_TAG in x) and
-                                 (self._redisDao.hget(self._fwk_name,x) == state),
-                       self._redisDao.hkeys(self._fwk_name)))
+                                 (self._redisDao.hget(self.fwk_name,x) == state),
+                       self._redisDao.hkeys(self.fwk_name)))
         return res
 
     def convertTaskIdToSchedulerFormat(self, task):
@@ -78,7 +78,7 @@ class SchedHelper():
     # return eval("{'task_id':{'value':\'%s\'}} " % task)
 
     def getTasksSet(self,setName):
-        tasks = self._redisDao.hget(self._fwk_name,setName)
+        tasks = self._redisDao.hget(self.fwk_name,setName)
         if tasks == None:
             res = set()
         else:
@@ -89,7 +89,7 @@ class SchedHelper():
     '''
     def getTasks(self):
         res=map(lambda x: x.replace(constants.STATE_KEY_TAG,constants.BLANK),
-                filter(lambda x: constants.STATE_KEY_TAG in x, self._redisDao.hkeys(self._fwk_name)))
+                filter(lambda x: constants.STATE_KEY_TAG in x, self._redisDao.hkeys(self.fwk_name)))
         return res
 
 
@@ -121,9 +121,9 @@ class SchedHelper():
         status (string): current status of the task (running,lost,...)
         agent (string)
     '''
-    def addTaskToState(self,updateTask):
+    def addTaskToState(self,updateTask, job_name):
         task=StatusTask.getTaskState(updateTask)
-        self._redisDao.hmset(":".join([self._fwk_name, constants.REDIS_TASKS_SET, updateTask.task_id['value']]),
+        self._redisDao.hmset(":".join([self.fwk_name, constants.REDIS_JOBS_SET, job_name,updateTask.task_id['value']]),
                           task)
     '''
     Method that removes a task from framework (key) state
@@ -131,28 +131,27 @@ class SchedHelper():
     ----------
     taskId (string): identifier of the task
     '''
-    def removeTaskFromState(self,taskId):
-        self._redisDao.delete(":".join([self._fwk_name, constants.REDIS_TASKS_SET, taskId]))
+    def removeTaskFromState(self,task):
+        self._redisDao.delete(":".join([self.fwk_name, constants.REDIS_JOBS_SET, task.job_name,task.mesos_task_id]))
         #self._redis.hdel(self._fwk_name, self.getContainerKey(taskId))
         #self._redis.hdel(self._fwk_name, self.getSourceKey(taskId))
         #self._redis.hdel(self._fwk_name, self.getStateKey(taskId))
         #self._redis.hdel(self._fwk_name, self.getAgentKey(taskId))
 
-    '''
-        Method that returns the number of tasks managed by one framework(key)
-        '''
+
     '''
     Method that returns the number of tasks managed by one framework(key)
     '''
-    def getNumberOfTasks(self):
-        actualTasks = self._redisDao.scan(match=":".join([self._fwk_name, constants.REDIS_TASKS_SET, '*']))[1]
-        return len(actualTasks)
+    def getNumberOfJobs(self):
+        actualJobs = self._redisDao.scan(match=":".join([self.fwk_name, constants.REDIS_JOBS_SET, '*']))[1]
+        d = dict(j.rsplit(':', 1) for j in actualJobs)
+        return len(d.keys())
 
     def getFwkName(self):
-        return self._redisDao.get(":".join([self._fwk_name, constants.REDIS_FW_ID]))
+        return self._redisDao.get(":".join([self.fwk_name, constants.REDIS_FW_ID]))
 
     def existsFwk(self):
-        return self._redisDao.hexists(self._fwk_name, constants.REDIS_FW_ID)
+        return self._redisDao.hexists(self.fwk_name, constants.REDIS_FW_ID)
     '''
         Publish/subscribe messages
     '''
