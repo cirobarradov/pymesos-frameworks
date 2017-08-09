@@ -37,7 +37,7 @@ class SchedHelper():
     def reconcileDown(self, driver):
         logging.info("RECONCILE DOWN")
         # reviveoffers if reconciled
-        if (self.getNumberOfTasks() == 0 and self.getReconcileStatus()):
+        if (self.getNumberOfJobs() == 0 and self.getReconcileStatus()):
             self.setReconcileStatus(False)
             driver.reviveOffers()
     '''
