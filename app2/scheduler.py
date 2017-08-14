@@ -165,10 +165,6 @@ def main( master, max_jobs, redis_server, fwkName):
     framework.name = fwkName
     framework.hostname = socket.gethostname()
 
-    if schedHelper.existsFwk():
-        logging.info("framework id already registered in redis")
-        framework.id = dict(value=schedHelper.getFwkName())
-
     cmd = '/app/task.sh ' + redis_server + " " + "task.py" + " " + fwkName
     script_dir = os.path.dirname(__file__)
     file_path = os.path.join(script_dir, 'config/jobconfiguration.json')
